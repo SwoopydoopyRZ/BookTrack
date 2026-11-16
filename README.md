@@ -28,11 +28,12 @@ After the first successful deployment, add the published site URL to Supabase Au
 
 ## Features
 
-- Add, search and delete household books with room, shelf, member and return details.
+- Add, search and delete household books. BookTrack creates each book ID automatically; only title and room are required.
 - Shared online collection with live refresh across signed-in devices.
 - Email magic-link sign-in.
 - QR code and Code 128 barcode generation and scanning.
+- Scan a book's ISBN barcode, or enter its ISBN, to look up its title and author through Open Library. You can review the result and add it to your collection.
 - JSON export/import backups.
 - Installable PWA support.
 
-Camera scanning requires HTTPS, camera permission and the scanner library CDN.
+Camera scanning requires HTTPS, camera permission and the scanner library CDN. ISBN lookup requires an internet connection and uses Open Library; ISBN details are saved with the book and synced with the household collection.

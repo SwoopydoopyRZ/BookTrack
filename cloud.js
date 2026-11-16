@@ -18,6 +18,8 @@
   const toRow = book => ({
     book_id: String(book.id).trim(),
     title: book.title,
+    author: book.author || '',
+    isbn: book.isbn || '',
     room: book.room || '',
     shelf: book.shelf || '',
     member: book.member || '',
@@ -28,6 +30,8 @@
   const fromRow = row => ({
     id: row.book_id,
     title: row.title,
+    author: row.author || '',
+    isbn: row.isbn || '',
     room: row.room || '',
     shelf: row.shelf || '',
     member: row.member || '',
