@@ -28,12 +28,14 @@ After the first successful deployment, add the published site URL to Supabase Au
 
 ## Features
 
-- Add, search and delete household books. Search the saved collection by title or author; on the Add a book screen, search Open Library by title or author and bring a result into the form. BookTrack creates each book ID automatically; only title and room are required.
+- Add, search and delete household books. Search the saved collection by title or author; on the Add a book screen, search Open Library and Google Books by title or author and bring a result into the form. BookTrack creates each book ID automatically; only title and room are required.
+- Warn before adding a duplicate book; you can still choose to add another copy.
+- Switch between light and dark themes in Settings; the choice is saved on the current device.
 - Shared online collection with live refresh across signed-in devices.
 - Email magic-link sign-in.
 - QR code and Code 128 barcode generation and scanning.
-- Scan a book's ISBN barcode, or enter its ISBN, to look up its title and author through Open Library. You can review the result and add it to your collection.
+- Scan a saved book's ISBN or BookTrack label to see its title, room and shelf. Look up an ISBN through Open Library and Google Books, then review and add the result to your collection.
 - JSON export/import backups.
 - Installable PWA support.
 
-Camera scanning requires HTTPS, camera permission and the scanner library CDN. ISBN lookup and online title/author searches require an internet connection and use Open Library; book details you add are saved with the book and synced with the household collection.
+Camera scanning requires HTTPS, camera permission and the scanner library CDN. ISBN lookup and online title/author searches require an internet connection and use Open Library and Google Books. Catalogs may not list every edition; if neither has a match, search by title or author or enter the details manually. Book details you add are saved with the book and synced with the household collection.
