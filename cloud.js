@@ -4,8 +4,11 @@
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   let activeUserId = null;
   let channel = null;
+  let roomShelvesAvailable = false;
   let pushRunning = false;
   let pushPending = false;
+  let locationsPushRunning = false;
+  let locationsPushPending = false;
 
   const status = (message, error = false) => {
     const el = document.getElementById('syncStatus');
@@ -59,8 +62,34 @@
 
     // Existing local books are merged by ID; remote versions win if an ID exists in both.
     window.BookTrack.replaceBooks([...remoteBooks, ...localOnly]);
-    status('Connected. ' + (remoteBooks.length + localOnly.length) +
-      ' shared book' + (remoteBooks.length + localOnly.length === 1 ? '' : 's') + '.');
+    const localLocations = window.BookTrack.getLocations();
+    const { data: locationData, error: locationError } = await client
+      .from('room_shelves')
+      .select('locations')
+      .eq('id', true)
+      .maybeSingle();
+    roomShelvesAvailable = !locationError;
+    if (locationError) {
+      status('Books connected, but shared rooms and shelves need database setup: ' + locationError.message, true);
+    } else {
+      const locationsChanged = window.BookTrack.replaceLocations(
+        locationData ? locationData.locations : [],
+        [...remoteBooks, ...localOnly],
+        locationData ? [] : localLocations
+      );
+      if (!locationData || locationsChanged) {
+        const { error: locationsError } = await client.from('room_shelves').upsert(
+          { id: true, locations: window.BookTrack.getLocations() },
+          { onConflict: 'id' }
+        );
+        if (locationsError) throw locationsError;
+      }
+    }
+
+    if (roomShelvesAvailable) {
+      status('Connected. ' + (remoteBooks.length + localOnly.length) +
+        ' shared book' + (remoteBooks.length + localOnly.length === 1 ? '' : 's') + '.');
+    }
   }
 
   async function refreshFromRealtime() {
@@ -69,7 +98,20 @@
       status('Could not refresh shared books: ' + error.message, true);
       return;
     }
-    window.BookTrack.replaceBooks((data || []).map(fromRow));
+    if (window.BookTrack.replaceBooks((data || []).map(fromRow))) pushLocations();
+  }
+
+  async function refreshLocationsFromRealtime() {
+    const { data, error } = await client
+      .from('room_shelves')
+      .select('locations')
+      .eq('id', true)
+      .maybeSingle();
+    if (error) {
+      status('Could not refresh shared rooms and shelves: ' + error.message, true);
+      return;
+    }
+    if (data) window.BookTrack.replaceLocations(data.locations, window.BookTrack.getBooks());
   }
 
   async function handleSession(session) {
@@ -100,8 +142,15 @@
           event: '*',
           schema: 'public',
           table: 'books'
-        }, refreshFromRealtime)
-        .subscribe();
+        }, refreshFromRealtime);
+      if (roomShelvesAvailable) {
+        channel.on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'room_shelves'
+        }, refreshLocationsFromRealtime);
+      }
+      channel.subscribe();
     } catch (error) {
       status('Database setup or access needs attention: ' + error.message, true);
     }
@@ -155,6 +204,30 @@
     } while (pushPending);
     pushRunning = false;
   }
+
+  async function pushLocations() {
+    if (!activeUserId) return;
+    if (locationsPushRunning) {
+      locationsPushPending = true;
+      return;
+    }
+    locationsPushRunning = true;
+    do {
+      locationsPushPending = false;
+      const { error } = await client.from('room_shelves').upsert(
+        { id: true, locations: window.BookTrack.getLocations() },
+        { onConflict: 'id' }
+      );
+      if (error) {
+        status('Room and shelf sync failed: ' + error.message, true);
+        break;
+      }
+      status('Room and shelf list synchronized.');
+    } while (locationsPushPending);
+    locationsPushRunning = false;
+  }
+
+  window.addEventListener('booktrack-locations-save', pushLocations);
 
   window.addEventListener('booktrack-local-save', async event => {
     const deletedBookId = event.detail && event.detail.deletedBookId;

@@ -38,6 +38,6 @@ Supabase's default email sender has delivery restrictions. For dependable househ
 
 ## 5. Verify deployment
 
-After Supabase reports the migration as successful, open **Table Editor** and confirm that `public.books` exists and RLS is enabled. Then test sign-in, adding a test book, and seeing it on another signed-in device.
+After Supabase reports the migration as successful, open **Table Editor** and confirm that `public.books` and `public.room_shelves` exist and RLS is enabled. Then test sign-in, adding a room and shelf, and seeing them on another signed-in device.
 
 The publishable key in `cloud.js` is designed for browser use. Never put a secret/service-role key in this repository.
