@@ -129,8 +129,10 @@ function isValidISBN(value){
  }
  return false;
 }
-function googleBookDetails(volume,isbn){
- return {isbn,title:volume.title||'',author:(volume.authors||[]).join(', '),publisher:volume.publisher||'',year:(volume.publishedDate||'').slice(0,4),source:'Google Books'};
+function googleBookDetails(entry,isbn){
+ const creators=entry['dc$creator']||entry.author||[],identifiers=(entry['dc$identifier']||[]).map(item=>String(item.$t||item)),title=entry.title&&entry.title.$t||((entry['dc$title']||[])[0]||{}).$t||'';
+ const author=creators.map(item=>item.$t||item.name&&item.name.$t||'').filter(Boolean).join(', '),bookISBN=isbn||identifiers.map(value=>value.replace(/^ISBN:\s*/i,'')).find(isValidISBN)||'';
+ return {isbn:bookISBN,title,author,publisher:((entry['dc$publisher']||[])[0]||{}).$t||'',year:(((entry['dc$date']||[])[0]||{}).$t||'').slice(0,4),source:'Google Books'};
 }
 async function fetchOpenLibraryISBN(isbn){
  const response=await fetch('https://openlibrary.org/search.json?isbn='+encodeURIComponent(isbn)+'&limit=1');
@@ -139,10 +141,10 @@ async function fetchOpenLibraryISBN(isbn){
  return book?{isbn,title:book.title||'',author:(book.author_name||[]).join(', '),publisher:(book.publisher||[])[0]||'',year:book.first_publish_year||'',source:'Open Library'}:null;
 }
 async function fetchGoogleBooksISBN(isbn){
- const response=await fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:'+encodeURIComponent(isbn)+'&maxResults=1');
+ const response=await fetch('https://www.google.com/books/feeds/volumes?q=isbn:'+encodeURIComponent(isbn)+'&alt=json&max-results=1');
  if(!response.ok)throw new Error('Google Books lookup failed.');
- const data=await response.json(),volume=data.items&&data.items[0]&&data.items[0].volumeInfo;
- return volume?googleBookDetails(volume,isbn):null;
+ const data=await response.json(),entry=data.feed&&data.feed.entry&&data.feed.entry[0];
+ return entry?googleBookDetails(entry,isbn):null;
 }
 async function fetchISBNDetails(value){
  const isbn=normalizeISBN(value);
@@ -196,13 +198,10 @@ async function searchOpenLibraryCatalog(field,value){
 }
 async function searchGoogleBooksCatalog(field,value){
  const searchField=field==='title'?'intitle':'inauthor',query=searchField+':'+value;
- const response=await fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(query)+'&maxResults=10');
+ const response=await fetch('https://www.google.com/books/feeds/volumes?q='+encodeURIComponent(query)+'&alt=json&max-results=10');
  if(!response.ok)throw new Error('Google Books search failed.');
  const data=await response.json();
- return (data.items||[]).map(item=>{
-  const volume=item.volumeInfo||{},isbn=(volume.industryIdentifiers||[]).map(identifier=>identifier.identifier).find(isValidISBN)||'';
-  return googleBookDetails(volume,isbn);
- }).filter(book=>book.title);
+ return (data.feed&&data.feed.entry||[]).map(entry=>googleBookDetails(entry,'')).filter(book=>book.title);
 }
 document.getElementById('searchOnline').onclick=async()=>{
  const query=document.getElementById('catalogQuery').value.trim(),button=document.getElementById('searchOnline'),results=document.getElementById('onlineSearchResults');
