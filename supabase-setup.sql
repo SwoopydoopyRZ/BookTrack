@@ -1,0 +1,56 @@
+-- BookTrack shared household database
+-- Run this entire file in Supabase Dashboard -> SQL Editor -> New query.
+-- Access is restricted to authenticated Supabase users. Turn off public sign-ups
+-- and invite only the household members you trust (see SUPABASE_SETUP.md).
+
+create table if not exists public.books (
+  book_id text primary key check (length(trim(book_id)) between 1 and 40),
+  title text not null check (length(trim(title)) between 1 and 100),
+  room text not null default '',
+  shelf text not null default '',
+  member text not null default '',
+  destination text not null default '',
+  details text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.books enable row level security;
+
+revoke all on table public.books from anon;
+grant select, insert, update, delete on table public.books to authenticated;
+
+drop policy if exists "Household members can read books" on public.books;
+create policy "Household members can read books"
+  on public.books for select to authenticated
+  using (true);
+
+drop policy if exists "Household members can add books" on public.books;
+create policy "Household members can add books"
+  on public.books for insert to authenticated
+  with check (true);
+
+drop policy if exists "Household members can edit books" on public.books;
+create policy "Household members can edit books"
+  on public.books for update to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "Household members can delete books" on public.books;
+create policy "Household members can delete books"
+  on public.books for delete to authenticated
+  using (true);
+
+-- Enable Supabase Realtime for the books table, without failing if already enabled.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'books'
+  ) then
+    alter publication supabase_realtime add table public.books;
+  end if;
+end
+$$;

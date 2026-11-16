@@ -1,39 +1,43 @@
 # BookTrack Home
 
-A static, mobile-friendly household book inventory app. It runs on GitHub Pages and does not need a server, Node.js, Vercel, or a password.
+A mobile-friendly household book inventory app hosted as a static site on GitHub Pages. Shared book data is stored in Supabase and protected by Supabase Auth and Row Level Security (RLS).
 
-## Book data persistence
+## Shared data and sign-in
 
-BookTrack stores the collection in the browser's `localStorage` under its own key. This means:
-- Books remain after refreshing the page or closing and reopening the browser.
-- The data stays on that browser and device.
-- Clearing browser/site data, using private/incognito mode, or removing the browser profile can erase the collection.
-- Different devices do not automatically share or synchronize their collections.
+- Book records are stored in the Supabase `public.books` table.
+- Household members sign in using one-time email links.
+- The app requests links only for existing users (`shouldCreateUser: false`).
+- Do not enable public sign-ups. Invite only the household members who should have access.
+- RLS policies require an authenticated Supabase user for every book read, insert, update and delete.
+- The Supabase publishable key is intended for browser use. Never put a Supabase secret/service-role key in this repository or browser code.
 
-Use **Settings → Export backup** regularly. On another device, open BookTrack and use **Settings → Import backup** to bring the collection across. Import merges books by their unique ID.
+## Supabase setup
 
-For automatic multi-device synchronization, a shared online database would need to be added. GitHub Pages alone is static hosting and does not provide a database.
+Follow **SUPABASE_SETUP.md** and run **supabase-setup.sql** in the Supabase SQL Editor before testing the app.
+
+You must also configure the deployed GitHub Pages URL under Supabase Authentication URL Configuration, disable public sign-ups, and invite household members under Authentication → Users. The default Supabase email sender has limited delivery; configure custom SMTP before relying on sign-in emails for the household.
+
+## Existing local books
+
+On the first successful sign-in, BookTrack merges locally stored books into the shared database by book ID. If the same ID exists both locally and remotely, the remote version wins. Export a backup before first sync as an extra precaution.
 
 ## Deploy with GitHub Pages
 
-1. In this repository, open **Settings → Pages**.
-2. Under **Build and deployment**, choose **Deploy from a branch**.
-3. Select the branch you want to publish and choose **/(root)** as the folder.
-4. Save and wait for GitHub Pages to finish deploying.
-5. Open the Pages URL on your phone or computer.
+1. Open repository **Settings → Pages**.
+2. Choose **Deploy from a branch**.
+3. Select the branch to publish and choose **/(root)**.
+4. Save and wait for deployment.
+5. Add the resulting site URL to Supabase's allowed redirect URLs.
 
-This project is currently being prepared on `feature/github-pages-migration`. Review and test that branch before merging it into `main` or selecting it for publication.
-
-## Run locally
-
-Open `index.html` in a browser for basic testing. For camera scanning and service-worker testing, use a local web server (for example, VS Code's Live Server extension) because browsers restrict camera access and service workers on ordinary file URLs.
+This work is being prepared on `feature/github-pages-migration`. Review and test it before merging into `main`; the main branch has not been changed by this work.
 
 ## Features
 
-- Add and search household books by title, ID, room, shelf and household member.
-- Scan QR codes and Code 128 barcodes.
-- Generate printable QR and barcode labels.
-- Export and import JSON backups.
-- Install as a PWA from a supported browser.
+- Add, search, edit-location metadata and delete household books.
+- Shared online book collection with live refresh across signed-in devices.
+- Email magic-link sign-in.
+- QR code and Code 128 barcode generation and scanning.
+- JSON export/import backups.
+- Installable PWA support.
 
-The QR/barcode libraries and camera scanner are loaded from public CDNs, so those features require an internet connection. Camera scanning also requires HTTPS (or localhost) and camera permission.
+Camera scanning requires HTTPS, camera permission and the scanner library CDN.
