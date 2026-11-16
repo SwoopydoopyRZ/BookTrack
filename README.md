@@ -1,39 +1,39 @@
 # BookTrack Home
 
-A mobile-friendly household book inventory that can be hosted as a static site on GitHub Pages.
+A static, mobile-friendly household book inventory app. It runs on GitHub Pages and does not need a server, Node.js, Vercel, or a password.
 
-## How book data is saved
+## Book data persistence
 
-BookTrack stores the collection in the browser's `localStorage` on the device where it is used. Saving a book writes the collection to storage immediately, so it remains available after reloading the page or closing and reopening the browser.
+BookTrack stores the collection in the browser's `localStorage` under its own key. This means:
+- Books remain after refreshing the page or closing and reopening the browser.
+- The data stays on that browser and device.
+- Clearing browser/site data, using private/incognito mode, or removing the browser profile can erase the collection.
+- Different devices do not automatically share or synchronize their collections.
 
-**Important limitations:**
-- Storage is local to a browser on one device. A phone and a PC each have their own collection.
-- Clearing browser/site data, using private/incognito mode, or uninstalling/resetting the browser can remove local data.
-- Export a backup regularly in **Settings → Export backup**. On another device, use **Import backup**.
-- Automatic sharing between devices requires a shared online database; GitHub Pages alone does not provide one.
+Use **Settings → Export backup** regularly. On another device, open BookTrack and use **Settings → Import backup** to bring the collection across. Import merges books by their unique ID.
 
-The app keeps the existing storage key so collections already saved in this browser under the previous BookTrack version are preserved.
-
-## Run locally
-
-Open `index.html` in a browser for basic use. For camera scanning and service-worker/PWA behavior, use a local HTTP server (for example, VS Code Live Server) or deploy to HTTPS. Camera access requires permission and a secure context.
+For automatic multi-device synchronization, a shared online database would need to be added. GitHub Pages alone is static hosting and does not provide a database.
 
 ## Deploy with GitHub Pages
 
-1. Open the repository on GitHub and go to **Settings → Pages**.
+1. In this repository, open **Settings → Pages**.
 2. Under **Build and deployment**, choose **Deploy from a branch**.
-3. Select the branch `feature/github-pages-migration` and folder `/ (root)`, then save.
-4. Wait for GitHub Pages to finish publishing. The Pages URL will be shown in Settings → Pages.
+3. Select the branch you want to publish and choose **/(root)** as the folder.
+4. Save and wait for GitHub Pages to finish deploying.
+5. Open the Pages URL on your phone or computer.
 
-This branch is being prepared separately. Review and test it before merging anything into `main`.
+This project is currently being prepared on `feature/github-pages-migration`. Review and test that branch before merging it into `main` or selecting it for publication.
+
+## Run locally
+
+Open `index.html` in a browser for basic testing. For camera scanning and service-worker testing, use a local web server (for example, VS Code's Live Server extension) because browsers restrict camera access and service workers on ordinary file URLs.
 
 ## Features
 
-- Add, search and filter household books by room.
-- Save title, unique ID, room, shelf, household member, return instructions and notes.
-- Generate QR labels and Code 128 barcodes.
-- Scan with a camera or enter a book ID manually (including USB barcode scanners that type like a keyboard).
+- Add and search household books by title, ID, room, shelf and household member.
+- Scan QR codes and Code 128 barcodes.
+- Generate printable QR and barcode labels.
 - Export and import JSON backups.
-- Install as a PWA from a supported mobile browser.
+- Install as a PWA from a supported browser.
 
-QR/barcode libraries and camera scanning need an internet connection. Camera scanning requires HTTPS and camera permission.
+The QR/barcode libraries and camera scanner are loaded from public CDNs, so those features require an internet connection. Camera scanning also requires HTTPS (or localhost) and camera permission.
