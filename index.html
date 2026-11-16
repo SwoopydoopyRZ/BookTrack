@@ -89,13 +89,13 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 <section id="scan" class="screen">
  <div class="section-head"><div><h2>Find a book</h2><p>Scan its QR code or barcode</p></div></div>
  <div class="card"><button class="primary" id="startScan" type="button">Start camera</button><div class="camera-panel" id="cameraPanel" hidden><video id="video" muted playsinline></video><button class="secondary" id="stopScan" type="button" style="width:100%;margin-top:11px">Stop camera</button></div>
- <div class="field"><label>OR SCAN / TYPE A BOOK ID</label><input id="manualCode" autocomplete="off" placeholder="Click here, then scan a barcode or type an ID"></div><button class="secondary" id="manualLookup" style="width:100%">Find this book</button><p class="smallmuted">USB scanner tip: click the ID box first. Most USB scanners type the code and press Enter; BookTrack will look it up automatically.</p>
+ <div class="field"><label>OR SCAN / TYPE A BOOK NAME</label><input id="manualCode" autocomplete="off" placeholder="Scan a label or type a book name"></div><button class="secondary" id="manualLookup" style="width:100%">Find this book</button><p class="smallmuted">USB scanner tip: click the box first. Most USB scanners type the label and press Enter; BookTrack will look it up automatically. Older ID barcodes still work.</p>
  <div id="scanResult" class="result">Scan a saved book's ISBN or a BookTrack label to see its room and shelf. Unsaved ISBNs can be looked up online.</div><p class="smallmuted">Camera scanning requires HTTPS (or localhost), internet for the scanner library and ISBN lookup, and camera permission.</p></div>
 </section>
 <section id="codes" class="screen">
  <div class="section-head"><div><h2>Make book labels</h2><p>Print a code and attach it to a book</p></div></div>
- <div class="card"><div class="field"><label>CHOOSE BOOK ID</label><input id="codeBookId" list="bookIds" placeholder="Type a saved book ID"><datalist id="bookIds"></datalist></div><button class="primary" id="makeCodes">Generate QR & barcode</button><div id="generated" class="codes" style="margin-top:15px"></div></div>
- <div class="note">QR codes contain the book's room, shelf and return notes. Barcodes contain the ID and look up the saved book on this phone.</div>
+ <div class="card"><div class="field"><label for="labelBook">CHOOSE BOOK</label><select id="labelBook"><option value="">Choose a book</option></select></div><div class="field"><label for="labelType">LABEL TYPE</label><select id="labelType"><option value="qr">QR code</option><option value="barcode">Barcode</option></select></div><button class="primary" id="makeCodes" type="button">Generate label</button><p class="smallmuted" id="labelStatus" role="status" aria-live="polite">Choose a saved book and label type.</p><div id="generated" class="codes" style="margin-top:15px"></div></div>
+ <div class="note">QR codes contain the book's location and return notes. Barcodes contain the book title and look it up in your collection. Older ID barcodes still work.</div>
 </section>
 <section id="settings" class="screen">
  <div class="section-head"><div><h2>Household settings</h2><p>Keep everyone's book list together</p></div></div>
@@ -268,7 +268,7 @@ function render(){
   list.append(section);
  });
  unbundled.forEach(book=>list.append(createBookRow(book)));
- const dl=document.getElementById('bookIds');dl.innerHTML=books.map(b=>`<option value="${esc(b.id)}"></option>`).join('');
+ renderLabelBookOptions();
  const seriesList=document.getElementById('bookSeriesList');seriesList.innerHTML=[...new Set(books.map(book=>String(book.series||'').trim()).filter(Boolean))].map(series=>`<option value="${esc(series)}"></option>`).join('');
  renderLocations();
  renderQuickSearch();
@@ -278,6 +278,19 @@ function createBookRow(book){
  el.innerHTML=`<div class="bookcover">📖</div><div class="bookmeta"><b>${esc(book.title)}</b><small>${esc(book.room)}${book.shelf?' · '+esc(book.shelf):''}</small><small>${esc(book.author||book.id)}</small></div><div class="arrow">›</div>`;
  el.onclick=()=>{document.getElementById('scanResult').innerHTML=bookResult(book,'your collection');go('scan')};
  return el;
+}
+function renderLabelBookOptions(){
+ const select=document.getElementById('labelBook'),previousId=select.value;
+ const sortedBooks=books.slice().sort((a,b)=>String(a.title).localeCompare(String(b.title)));
+ select.innerHTML='<option value="">Choose a book</option>'+sortedBooks.map(book=>{
+  const location=[book.room,book.shelf].filter(Boolean).join(' · ');
+  const label=[book.title,book.author,location].filter(Boolean).join(' — ');
+  return `<option value="${esc(book.id)}">${esc(label)}</option>`;
+ }).join('');
+ select.value=books.some(book=>book.id===previousId)?previousId:'';
+ document.getElementById('makeCodes').disabled=!books.length;
+ document.getElementById('labelStatus').textContent=books.length?'Choose a saved book and label type.':'Add a book to your collection before making a label.';
+ if(previousId&&!books.some(book=>book.id===previousId))document.getElementById('generated').innerHTML='';
 }
 function renderQuickSearch(){
  const input=document.getElementById('quickSearch'),results=document.getElementById('quickSearchResults'),query=input.value.trim().toLocaleLowerCase();
@@ -406,10 +419,41 @@ document.getElementById('bookForm').onsubmit=e=>{
  go('home');
 };
 function payload(b){return JSON.stringify({app:'BookTrackHome',version:3,...b})}
-document.getElementById('makeCodes').onclick=()=>{const b=books.find(x=>x.id.toLowerCase()===codeBookId.value.trim().toLowerCase()),out=document.getElementById('generated');out.innerHTML='';if(!b){out.textContent='Book not found. Add it to your collection first.';return}
- const qr=document.createElement('div');qr.className='codebox';qr.innerHTML='<b>QR code</b><canvas></canvas><p class="smallmuted">Full location details</p><button class="secondary">Save QR image</button>';const bc=document.createElement('div');bc.className='codebox';bc.innerHTML='<b>Barcode</b><svg></svg><p class="smallmuted">Book ID only</p><button class="secondary">Save barcode</button>';out.append(qr,bc);
- const c=qr.querySelector('canvas');QRCode.toCanvas(c,payload(b),{width:210,margin:2});qr.querySelector('button').onclick=()=>{const a=document.createElement('a');a.download='BookTrack-'+b.id+'-QR.png';a.href=c.toDataURL();a.click()};
- const svg=bc.querySelector('svg');JsBarcode(svg,b.id,{format:'CODE128',width:2,height:60,displayValue:true,margin:5});bc.querySelector('button').onclick=()=>{const u=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'})),a=document.createElement('a');a.href=u;a.download='BookTrack-'+b.id+'-barcode.svg';a.click();URL.revokeObjectURL(u)};buzz();
+function labelFileName(title){return String(title||'book').replace(/[\\/:*?"<>|]/g,'-').trim()||'book'}
+document.getElementById('makeCodes').onclick=()=>{
+ const b=books.find(book=>book.id===document.getElementById('labelBook').value),out=document.getElementById('generated'),status=document.getElementById('labelStatus'),type=document.getElementById('labelType').value;
+ out.innerHTML='';
+ if(!b){status.textContent='Choose a saved book first.';return}
+ const fileName=labelFileName(b.title),box=document.createElement('div');
+ box.className='codebox';
+ if(type==='qr'){
+  if(typeof QRCode==='undefined'){status.textContent='The QR code generator is unavailable. Check your internet connection and try again.';return}
+  box.innerHTML=`<b>${esc(b.title)}</b><canvas></canvas><p class="smallmuted">QR code with location details</p><button class="secondary" type="button">Save QR image</button>`;
+  out.append(box);
+  const canvas=box.querySelector('canvas');
+  QRCode.toCanvas(canvas,payload(b),{width:210,margin:2}).then(()=>{
+   status.textContent='QR code ready for '+b.title+'.';
+   box.querySelector('button').onclick=()=>{const a=document.createElement('a');a.download='BookTrack-'+fileName+'-QR.png';a.href=canvas.toDataURL();a.click()};
+  }).catch(error=>{
+   console.error('Could not generate the book QR code.',error);
+   status.textContent='Could not generate the QR code. Check the connection and try again.';
+  });
+ }else{
+  if(typeof JsBarcode==='undefined'){status.textContent='The barcode generator is unavailable. Check your internet connection and try again.';return}
+  box.innerHTML=`<b>${esc(b.title)}</b><svg></svg><p class="smallmuted">Barcode using the book title</p><button class="secondary" type="button">Save barcode</button>`;
+  out.append(box);
+  const svg=box.querySelector('svg');
+  try{
+   JsBarcode(svg,b.title,{format:'CODE128',width:2,height:60,displayValue:true,margin:5});
+   status.textContent='Barcode ready for '+b.title+'.';
+   box.querySelector('button').onclick=()=>{const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'})),a=document.createElement('a');a.href=url;a.download='BookTrack-'+fileName+'-barcode.svg';a.click();URL.revokeObjectURL(url)};
+  }catch(error){
+   console.error('Could not generate the book title barcode.',error);
+   box.remove();
+   status.textContent='Could not make a barcode for this title. Try a QR code instead.';
+  }
+ }
+ buzz();
 };
 function bookResult(b,source){return `<h3>📍 This book belongs here</h3><b>${esc(b.title)}</b>${b.author?`<br>${esc(b.author)}`:''}${b.series?`<br>Series: ${esc(b.series)}`:''}<br>Book ID: ${esc(b.id)}${b.isbn?`<br>ISBN: ${esc(b.isbn)}`:''}<p><b>Room:</b> ${esc(b.room||'Not set')}<br><b>Shelf:</b> ${esc(b.shelf||'Not set')}<br><b>Looking after it:</b> ${esc(b.member||'Not assigned')}</p>${b.destination?`<p><b>Put it back:</b><br>${esc(b.destination)}</p>`:''}${b.details?`<p><b>Notes:</b> ${esc(b.details)}</p>`:''}<span class="smallmuted">Found from ${esc(source)}.</span>${source==='household list'||source==='your collection'?`<div style="margin-top:14px"><button class="secondary" data-edit-series="${esc(b.id)}" type="button">Set / edit series</button> <button class="secondary" data-delete-book="${esc(b.id)}" type="button">Delete this book</button></div>`:''}`}
 document.getElementById('scanResult').addEventListener('click',event=>{
@@ -470,8 +514,10 @@ async function lookup(raw){
    catch(error){document.getElementById('scanResult').textContent=error.message}
    return;
  }
+ const titleMatches=books.filter(book=>String(book.title||'').trim().toLocaleLowerCase()===id.toLocaleLowerCase());
+ if(titleMatches.length){document.getElementById('scanResult').innerHTML=titleMatches.map(book=>bookResult(book,'household list')).join('<hr>');return}
  scannedBookDetails=null;
- document.getElementById('scanResult').innerHTML='<b>Book not found.</b><br>Try a BookTrack ID, or scan a valid ISBN-10/13 barcode to look up book details.';
+ document.getElementById('scanResult').innerHTML='<b>Book not found.</b><br>Try a book name or an older BookTrack ID, or scan a valid ISBN-10/13 barcode to look up book details.';
 }
 document.getElementById('lookupIsbn').onclick=async()=>{
  const status=document.getElementById('isbnStatus'),button=document.getElementById('lookupIsbn');
