@@ -53,7 +53,9 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 <section id="home" class="screen active">
  <div class="quick"><button data-go="scan"><span class="qicon">▦</span><span><strong>Scan a book</strong><br><small>Find its home instantly</small></span></button><button data-go="add"><span class="qicon">＋</span><span><strong>Add a book</strong><br><small>Give it a place to live</small></span></button></div>
  <div class="section-head"><div><h2>Your collection</h2><p>All your household books, in one place</p></div></div>
- <div class="search"><span>⌕</span><input id="search" placeholder="Search title, room or shelf…"></div>
+ <div class="search"><span>⌕</span><input id="search" placeholder="Search your books by title or author…"></div>
+ <button class="secondary" id="searchOnline" type="button" style="width:100%;margin-bottom:12px">Search Open Library by title or author</button>
+ <div class="card" id="onlineSearchResults" role="status" aria-live="polite" hidden></div>
  <div class="pills" id="roomPills"></div>
  <div class="card" id="bookList"></div>
 </section>
@@ -125,10 +127,10 @@ async function fetchISBNDetails(value){
  if(!book)throw new Error('No book details were found for this ISBN.');
  return {isbn,title:book.title||'',author:(book.author_name||[]).join(', '),publisher:(book.publisher||[])[0]||'',year:book.first_publish_year||''};
 }
-function fillBookFromISBN(book){
+function fillBookDetails(book){
  document.getElementById('bookName').value=book.title;
  document.getElementById('author').value=book.author;
- document.getElementById('isbn').value=book.isbn;
+ document.getElementById('isbn').value=book.isbn||'';
  document.getElementById('isbnStatus').textContent='Book details filled in. Check them, then save.';
 }
 function showISBNResult(book){
@@ -148,6 +150,39 @@ function render(){
  const dl=document.getElementById('bookIds');dl.innerHTML=books.map(b=>`<option value="${esc(b.id)}"></option>`).join('');
 }
 document.getElementById('search').oninput=render;
+let onlineBooks=[];
+document.getElementById('searchOnline').onclick=async()=>{
+ const query=document.getElementById('search').value.trim(),button=document.getElementById('searchOnline'),results=document.getElementById('onlineSearchResults');
+ results.hidden=false;
+ if(!query){results.textContent='Enter a book title or author in the search box first.';return}
+ button.disabled=true;
+ results.textContent='Searching Open Library…';
+ try{
+  const titleAndAuthor=query.match(/^(.+?)\s+(?:by|from)\s+(.+)$/i),searches=titleAndAuthor?[['title',titleAndAuthor[1]],['author',titleAndAuthor[2]]]:[['title',query],['author',query]];
+  const responses=await Promise.all(searches.map(([field,value])=>fetch('https://openlibrary.org/search.json?'+field+'='+encodeURIComponent(value)+'&fields=title,author_name,isbn,first_publish_year&limit=10')));
+  if(responses.some(response=>!response.ok))throw new Error('The book search service is unavailable right now. Try again later.');
+  const data=await Promise.all(responses.map(response=>response.json()));
+  const found=data.flatMap(result=>result.docs||[]),uniqueBooks=new Map();
+  found.forEach(book=>{
+   const details={title:book.title||'',author:(book.author_name||[]).join(', '),isbn:(book.isbn||[]).find(isValidISBN)||'',year:book.first_publish_year||''};
+   const key=(details.title+'|'+details.author).toLowerCase();
+   if(details.title&&!uniqueBooks.has(key))uniqueBooks.set(key,details);
+  });
+  onlineBooks=[...uniqueBooks.values()];
+  if(!onlineBooks.length){results.textContent='No books found. Try a different title or author.';return}
+  results.innerHTML='<b>Online book results</b>'+onlineBooks.map((book,index)=>`<div class="bookrow"><div class="bookmeta"><b>${esc(book.title)}</b><small>${esc(book.author||'Author not listed')}${book.year?' · '+esc(book.year):''}</small></div><button class="secondary" type="button" data-online-book="${index}">Use this book</button></div>`).join('');
+ }catch(error){results.textContent=error.message}
+ finally{button.disabled=false}
+};
+document.getElementById('onlineSearchResults').addEventListener('click',event=>{
+ const button=event.target.closest('[data-online-book]');
+ if(!button)return;
+ const book=onlineBooks[Number(button.dataset.onlineBook)];
+ if(!book)return;
+ fillBookDetails(book);
+ go('add');
+ document.getElementById('bookName').focus();
+});
 document.getElementById('bookForm').onsubmit=e=>{e.preventDefault();const value=id=>document.getElementById(id).value.trim(),b={title:value('bookName'),author:value('author'),isbn:normalizeISBN(value('isbn')),id:value('bookId')||newBookId(),room:value('room'),shelf:value('shelf'),member:value('member'),destination:value('destination'),details:value('details')};if(books.some(x=>x.id.toLowerCase()===b.id.toLowerCase()))b.id=newBookId();books.push(b);save();e.target.reset();document.getElementById('bookId').value=newBookId();document.getElementById('isbnStatus').textContent='A book’s ISBN barcode can fill in its title and author.';buzz();go('home')};
 function payload(b){return JSON.stringify({app:'BookTrackHome',version:3,...b})}
 document.getElementById('makeCodes').onclick=()=>{const b=books.find(x=>x.id.toLowerCase()===codeBookId.value.trim().toLowerCase()),out=document.getElementById('generated');out.innerHTML='';if(!b){out.textContent='Book not found. Add it to your collection first.';return}
@@ -158,7 +193,7 @@ document.getElementById('makeCodes').onclick=()=>{const b=books.find(x=>x.id.toL
 function bookResult(b,source){return `<h3>📍 This book belongs here</h3><b>${esc(b.title)}</b>${b.author?`<br>${esc(b.author)}`:''}<br>Book ID: ${esc(b.id)}${b.isbn?`<br>ISBN: ${esc(b.isbn)}`:''}<p><b>Room:</b> ${esc(b.room||'Not set')}<br><b>Shelf:</b> ${esc(b.shelf||'Not set')}<br><b>Looking after it:</b> ${esc(b.member||'Not assigned')}</p>${b.destination?`<p><b>Put it back:</b><br>${esc(b.destination)}</p>`:''}${b.details?`<p><b>Notes:</b> ${esc(b.details)}</p>`:''}<span class="smallmuted">Found from ${esc(source)}.</span>${source==='household list'||source==='your collection'?`<div style="margin-top:14px"><button class="secondary" data-delete-book="${esc(b.id)}" type="button">Delete this book</button></div>`:''}`}
 document.getElementById('scanResult').addEventListener('click',event=>{
  const addButton=event.target.closest('[data-add-isbn]');
- if(addButton&&scannedBookDetails){fillBookFromISBN(scannedBookDetails);go('add');document.getElementById('bookName').focus();return}
+ if(addButton&&scannedBookDetails){fillBookDetails(scannedBookDetails);go('add');document.getElementById('bookName').focus();return}
  const button=event.target.closest('[data-delete-book]');
  if(!button) return;
  const id=button.dataset.deleteBook;
@@ -188,7 +223,7 @@ async function lookup(raw){
 document.getElementById('lookupIsbn').onclick=async()=>{
  const status=document.getElementById('isbnStatus'),button=document.getElementById('lookupIsbn');
  button.disabled=true;status.textContent='Looking up ISBN…';
- try{const book=await fetchISBNDetails(document.getElementById('isbn').value);fillBookFromISBN(book)}
+ try{const book=await fetchISBNDetails(document.getElementById('isbn').value);fillBookDetails(book)}
  catch(error){status.textContent=error.message}
  finally{button.disabled=false}
 };
