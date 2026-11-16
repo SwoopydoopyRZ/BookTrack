@@ -3,7 +3,7 @@ const CACHE = 'booktrack-static-v6';
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache =>
-    cache.addAll(['./manifest.webmanifest'])
+    cache.addAll(['./', './manifest.webmanifest'])
   ));
 });
 
@@ -18,5 +18,5 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Leave app navigations and user data in browser storage; never cache
-// an HTML page containing or depending on a user's private collection.
+// BookTrack's book collection is stored separately in localStorage.
+// Avoid caching page navigations so updates to the app are picked up cleanly.
