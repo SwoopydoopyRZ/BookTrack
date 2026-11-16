@@ -82,7 +82,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <div class="section-head"><div><h2>Household settings</h2><p>Keep everyone's book list together</p></div></div>
  <div class="card"><div class="field"><label>HOUSEHOLD NAME</label><input id="houseName" placeholder="e.g. The Miller Home"></div><div class="field"><label>HOUSEHOLD INITIALS</label><input id="houseInitials" maxlength="3" placeholder="e.g. MH"></div><button class="primary" id="saveHouse">Save household details</button></div>
  <div class="card"><h3 style="margin:0 0 7px">Backup & share between phones</h3><p class="smallmuted">Export your household collection on one phone, then import the file on another. This version does not sync automatically.</p><div class="rowbuttons"><button class="secondary" id="exportData">Export backup</button><button class="secondary" id="importButton">Import backup</button><input id="importFile" type="file" accept="application/json" hidden></div></div>
- <div class="card"><h3 style="margin:0 0 7px">A quick note</h3><p class="smallmuted">BookTrack saves your list in this browser on this device. For live syncing between family phones, a private online database and household sign-in need to be added. Keep backup files private.</p></div>
+ <div class="card"><h3 style="margin:0 0 7px">A quick note</h3><p class="smallmuted">BookTrack saves your list in this browser on this device using localStorage, so it remains after reloads and browser restarts. Do not clear this site's browser data or use private/incognito mode for your collection. Export backups regularly. Each device has its own list; automatic syncing between phones needs a shared online database.</p></div>
 </section>
 <footer>Made for the books you share at home.</footer>
 </main>
@@ -125,7 +125,7 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  if(!book) return;
  if(!confirm(`Delete "${book.title}" from this device's BookTrack collection?`)) return;
  books=books.filter(item=>item.id!==id);
- localStorage.setItem(STORE,JSON.stringify(books));
+ localStorage.setItem(KEY,JSON.stringify(books));
  document.getElementById('scanResult').innerHTML='<b>Book deleted.</b>';
  render();
 });
