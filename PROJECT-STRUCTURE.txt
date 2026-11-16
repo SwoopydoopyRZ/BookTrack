@@ -1,6 +1,4 @@
-index.html              Static BookTrack app
-manifest.webmanifest    PWA manifest
+index.html              Main static BookTrack app
+manifest.webmanifest    PWA manifest for GitHub Pages
 sw.js                   Service worker
-README.md               Setup, persistence and deployment instructions
-
-Book records are stored locally in the browser using localStorage.
+README.md               Setup, persistence and backup instructions
