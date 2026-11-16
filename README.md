@@ -33,7 +33,7 @@ This work is being prepared on `feature/github-pages-migration`. Review and test
 
 ## Features
 
-- Add, search, edit-location metadata and delete household books.
+- Add, search and delete household books, with room, shelf, member and return details.
 - Shared online book collection with live refresh across signed-in devices.
 - Email magic-link sign-in.
 - QR code and Code 128 barcode generation and scanning.
