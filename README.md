@@ -28,7 +28,7 @@ After the first successful deployment, add the published site URL to Supabase Au
 
 ## Features
 
-- Add, search and delete household books. Search the saved collection by title or author; on the Add a book screen, search Open Library and Google Books by title or author and bring a result into the form. BookTrack creates each book ID automatically; choose a room and a shelf or “No shelf”.
+- Add, search and delete household books. Use the bottom search field to find saved books by title or author and see their room and shelf; on the Add a book screen, search Open Library and Google Books by title or author and bring a result into the form. BookTrack creates each book ID automatically; choose a room and a shelf or “No shelf”.
 - Warn before adding a duplicate book; you can still choose to add another copy.
 - Switch between light and dark themes in Settings; the choice is saved on the current device.
 - Manage shared rooms and each room's shelves in Settings; select a room and shelf when adding a book.

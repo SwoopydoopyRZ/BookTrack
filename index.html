@@ -10,7 +10,7 @@
 :root[data-theme="dark"] .quick button:nth-child(2){color:#fff}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 button,input,textarea,select{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.app{max-width:760px;margin:auto;min-height:100dvh;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+.app{max-width:760px;margin:auto;min-height:100dvh;padding-bottom:calc(165px + env(safe-area-inset-bottom))}
 .top{background:var(--deep);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 25px;border-radius:0 0 28px 28px}
 .topline{display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.4px}
 .logo{width:37px;height:37px;border-radius:13px;background:var(--mint);display:grid;place-items:center;color:var(--deep);font-size:19px}
@@ -33,6 +33,8 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 .result{margin-top:12px;background:var(--soft);border-radius:15px;padding:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.result h3{margin:0 0 8px;font-size:15px}
 .codes{display:flex;flex-wrap:wrap;gap:12px}.codebox{flex:1;min-width:145px;text-align:center;border:1px dashed var(--line);border-radius:14px;padding:12px;background:var(--surface)}.codebox canvas,.codebox svg{max-width:100%;height:auto}
 .bottomnav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}.navinner{width:100%;max-width:600px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.navinner button{border:0;background:transparent;color:var(--nav-muted);border-radius:12px;padding:7px 2px 5px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.navinner button span{font-size:19px;line-height:1.2}.navinner button.active{color:var(--green);background:var(--nav-active-bg)}
+.quick-search-dock{position:fixed;z-index:6;left:0;right:0;bottom:calc(68px + env(safe-area-inset-bottom));padding:8px 12px;background:var(--bg)}.quick-search-inner{max-width:736px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:8px 12px}.quick-search-inner input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);padding:5px 0}.quick-search-inner input::placeholder{color:var(--muted);opacity:.85}.quick-search-results{max-height:38vh;overflow:auto;border-top:1px solid var(--line);margin-top:7px}.quick-search-results[hidden]{display:none}.quick-search-result{padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.quick-search-result:last-child{border-bottom:0}.quick-search-result b,.quick-search-result small{display:block}.quick-search-result small{color:var(--muted);font-size:11px;margin-top:3px}
+.quick-search-dock[hidden]{display:none}
 .smallmuted{font-size:11px;color:var(--muted);line-height:1.5}footer{text-align:center;color:#98a3a5;font-size:10px;padding:10px}
 .camera-panel[hidden]{display:none}
 @media(min-width:620px){.top{border-radius:0 0 32px 32px;padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}main{padding-left:25px;padding-right:25px}.stats{max-width:400px}.quick{grid-template-columns:repeat(2,1fr)}}
@@ -102,6 +104,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 </section>
 <footer>Made for the books you share at home.</footer>
 </main>
+<div class="quick-search-dock" id="quickSearchDock"><div class="quick-search-inner"><input id="quickSearch" type="search" autocomplete="off" placeholder="Find a book by title or author…" aria-label="Search books by title or author"><div class="quick-search-results" id="quickSearchResults" role="list" aria-live="polite" hidden></div></div></div>
 <nav class="bottomnav"><div class="navinner">
 <button class="active" data-tab="home"><span>⌂</span>Home</button><button data-tab="scan"><span>▦</span>Scan</button><button data-tab="codes"><span>▤</span>Labels</button><button data-tab="settings"><span>⚙</span>Settings</button>
 </div></nav>
@@ -220,7 +223,7 @@ function showISBNResult(book){
  scannedBookDetails=book;
  document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b>${esc(book.title)}</b>${book.author?`<p><b>Author:</b> ${esc(book.author)}</p>`:''}${book.publisher?`<p><b>Publisher:</b> ${esc(book.publisher)}${book.year?', '+esc(book.year):''}</p>`:''}<p class="smallmuted">Details from ${esc(book.source||'Open Library')} for ISBN ${esc(book.isbn)}. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
 }
-function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id!=='scan'){stopCamera();scanForAdd=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'){stopCamera();scanForAdd=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderAddLocationOptions(selectedRoom=document.getElementById('room').value,selectedShelf=document.getElementById('shelf').value){
  const roomSelect=document.getElementById('room'),shelfSelect=document.getElementById('shelf');
@@ -248,7 +251,32 @@ function render(){
  shown.forEach(b=>{const el=document.createElement('div');el.className='bookrow';el.innerHTML=`<div class="bookcover">📖</div><div class="bookmeta"><b>${esc(b.title)}</b><small>${esc(b.room)}${b.shelf?' · '+esc(b.shelf):''}</small><small>${esc(b.author||b.id)}</small></div><div class="arrow">›</div>`;el.onclick=()=>{document.getElementById('scanResult').innerHTML=bookResult(b,'your collection');go('scan')};list.appendChild(el)});
  const dl=document.getElementById('bookIds');dl.innerHTML=books.map(b=>`<option value="${esc(b.id)}"></option>`).join('');
  renderLocations();
+ renderQuickSearch();
 }
+function renderQuickSearch(){
+ const input=document.getElementById('quickSearch'),results=document.getElementById('quickSearchResults'),query=input.value.trim().toLocaleLowerCase();
+ results.innerHTML='';
+ if(!query){results.hidden=true;return}
+ const matches=books.filter(book=>[book.title,book.author].some(value=>String(value||'').toLocaleLowerCase().includes(query)));
+ results.hidden=false;
+ if(!matches.length){results.innerHTML='<div class="quick-search-result smallmuted">No matching books in your collection.</div>';return}
+ results.innerHTML=matches.map(book=>`<div class="quick-search-result" role="listitem" tabindex="0" data-quick-book="${esc(book.id)}"><b>${esc(book.title)}</b><small>${esc(book.author||'Author not listed')} · Room: ${esc(book.room||'Not set')} · Shelf: ${esc(book.shelf||'Not set')}</small></div>`).join('');
+}
+document.getElementById('quickSearch').addEventListener('input',renderQuickSearch);
+document.getElementById('quickSearchResults').addEventListener('click',event=>{
+ const result=event.target.closest('[data-quick-book]');
+ if(!result)return;
+ const book=books.find(item=>item.id===result.dataset.quickBook);
+ if(!book)return;
+ document.getElementById('scanResult').innerHTML=bookResult(book,'your collection');
+ go('scan');
+});
+document.getElementById('quickSearchResults').addEventListener('keydown',event=>{
+ if(event.key==='Enter'||event.key===' '){
+  const result=event.target.closest('[data-quick-book]');
+  if(result){event.preventDefault();result.click()}
+ }
+});
 document.getElementById('room').addEventListener('change',()=>renderAddLocationOptions(document.getElementById('room').value,''));
 document.getElementById('roomForm').addEventListener('submit',event=>{
  event.preventDefault();
