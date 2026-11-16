@@ -152,7 +152,14 @@
     pushRunning = false;
   }
 
-  window.addEventListener('booktrack-local-save', () => {
+  window.addEventListener('booktrack-local-save', async event => {
+    const deletedBookId = event.detail && event.detail.deletedBookId;
+    if (deletedBookId && activeUserId) {
+      const { error } = await client.from('books').delete().eq('book_id', deletedBookId);
+      if (error) status('Cloud delete failed: ' + error.message, true);
+      else status('Book deleted from the shared collection.');
+      return;
+    }
     pushPending = true;
     if (activeUserId) pushChanges();
   });
