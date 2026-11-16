@@ -53,18 +53,19 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 <section id="home" class="screen active">
  <div class="quick"><button data-go="scan"><span class="qicon">▦</span><span><strong>Scan a book</strong><br><small>Find its home instantly</small></span></button><button data-go="add"><span class="qicon">＋</span><span><strong>Add a book</strong><br><small>Give it a place to live</small></span></button></div>
  <div class="section-head"><div><h2>Your collection</h2><p>All your household books, in one place</p></div></div>
- <div class="search"><span>⌕</span><input id="search" placeholder="Search your books by title or author…"></div>
- <button class="secondary" id="searchOnline" type="button" style="width:100%;margin-bottom:12px">Search Open Library by title or author</button>
- <div class="card" id="onlineSearchResults" role="status" aria-live="polite" hidden></div>
+ <div class="search"><span>⌕</span><input id="search" placeholder="Search saved books by title, author, room or shelf…"></div>
  <div class="pills" id="roomPills"></div>
  <div class="card" id="bookList"></div>
 </section>
 <section id="add" class="screen">
  <div class="section-head"><div><h2>Add a book</h2><p>Choose where it belongs at home</p></div></div>
- <div class="card"><form id="bookForm">
+ <div class="card">
+ <div class="field"><label for="catalogQuery">SEARCH BOOKS BY TITLE OR AUTHOR</label><div class="rowbuttons"><input id="catalogQuery" placeholder="e.g. Thabo or Kirsten Boie"><button class="secondary" id="searchOnline" type="button">Search</button></div><p class="smallmuted">Search Open Library to fill in a book's title and author.</p></div>
+ <div class="result" id="onlineSearchResults" role="status" aria-live="polite" hidden></div>
+ <form id="bookForm">
  <p class="smallmuted">Just add a title and room to get started. Everything else is optional.</p>
  <div class="field"><label for="bookName">BOOK TITLE</label><input id="bookName" required maxlength="100" placeholder="e.g. The Hobbit"></div>
- <div class="field"><label for="author">AUTHOR (OPTIONAL)</label><input id="author" maxlength="120" placeholder="Filled in when an ISBN is found"></div>
+ <div class="field"><label for="author">AUTHOR (OPTIONAL)</label><input id="author" maxlength="120" placeholder="Filled in by book search or ISBN lookup"></div>
  <div class="field"><label for="room">ROOM</label><input id="room" required maxlength="60" placeholder="e.g. Living room"></div>
  <div class="field"><label for="shelf">SHELF OR SPOT (OPTIONAL)</label><input id="shelf" maxlength="80" placeholder="e.g. Bookcase 2, top shelf"></div>
  <details><summary class="smallmuted">Add more details (optional)</summary>
@@ -152,7 +153,7 @@ function render(){
 document.getElementById('search').oninput=render;
 let onlineBooks=[];
 document.getElementById('searchOnline').onclick=async()=>{
- const query=document.getElementById('search').value.trim(),button=document.getElementById('searchOnline'),results=document.getElementById('onlineSearchResults');
+ const query=document.getElementById('catalogQuery').value.trim(),button=document.getElementById('searchOnline'),results=document.getElementById('onlineSearchResults');
  results.hidden=false;
  if(!query){results.textContent='Enter a book title or author in the search box first.';return}
  button.disabled=true;

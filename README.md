@@ -28,7 +28,7 @@ After the first successful deployment, add the published site URL to Supabase Au
 
 ## Features
 
-- Add, search and delete household books. Search the saved collection by title or author, or search Open Library online by title or author and bring a result into the add-book form. BookTrack creates each book ID automatically; only title and room are required.
+- Add, search and delete household books. Search the saved collection by title or author; on the Add a book screen, search Open Library by title or author and bring a result into the form. BookTrack creates each book ID automatically; only title and room are required.
 - Shared online collection with live refresh across signed-in devices.
 - Email magic-link sign-in.
 - QR code and Code 128 barcode generation and scanning.
