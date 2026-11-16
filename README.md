@@ -4,9 +4,7 @@ Mobile-friendly household book inventory PWA hosted on GitHub Pages. Book data i
 
 ## Supabase database deployment
 
-The schema migration is stored in `supabase/migrations/`. Connect the Supabase project to this GitHub repository using the official integration, with working directory `.`. Supabase can then apply migrations automatically when they reach the configured production branch. See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for the one-time authorization and deployment settings.
-
-Do not merge `feature/github-pages-migration` into `main` until the app and migration have been reviewed. If Supabase Branching is enabled on the plan, use a pull-request preview database to test first.
+The schema migration is stored in `supabase/migrations/`. The Supabase GitHub integration applies migrations when they reach the configured production branch. See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for integration and deployment settings.
 
 ## Privacy
 
@@ -20,13 +18,13 @@ Do not merge `feature/github-pages-migration` into `main` until the app and migr
 
 On first sign-in, locally stored books are merged into the shared database by book ID. If an ID exists both locally and remotely, the remote record wins. Export a backup before first sync.
 
-## GitHub Pages
+## GitHub Pages deployment
 
-1. Open repository **Settings → Pages**.
-2. Choose **Deploy from a branch**.
-3. Select the branch to publish and choose **/(root)**.
-4. Save and wait for deployment.
-5. Add the resulting site URL to Supabase Authentication's allowed redirect URLs.
+GitHub Actions deploys the repository root to GitHub Pages automatically on every push to `main`. You can also start a run manually from the repository's **Actions** tab using **Deploy BookTrack to GitHub Pages**.
+
+One-time repository setup: open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**. Do not select “Deploy from a branch”.
+
+After the first successful deployment, add the published site URL to Supabase Authentication's allowed redirect URLs.
 
 ## Features
 
