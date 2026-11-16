@@ -1,4 +1,4 @@
-const CACHE = 'booktrack-static-v5';
+const CACHE = 'booktrack-static-v6';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -18,5 +18,5 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Do not intercept or cache navigation requests. In particular, never cache
-// the authenticated home page or a redirect to login in the public service-worker cache.
+// Leave app navigations and user data in browser storage; never cache
+// an HTML page containing or depending on a user's private collection.
