@@ -84,6 +84,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <div class="section-head"><div><h2>Household settings</h2><p>Keep everyone's book list together</p></div></div>
  <div class="card"><div class="field"><label>HOUSEHOLD NAME</label><input id="houseName" placeholder="e.g. The Miller Home"></div><div class="field"><label>HOUSEHOLD INITIALS</label><input id="houseInitials" maxlength="3" placeholder="e.g. MH"></div><button class="primary" id="saveHouse">Save household details</button></div>
  <div class="card"><h3 style="margin:0 0 7px">Shared household collection</h3><p class="smallmuted" id="syncStatus">Your books sync through the shared database while you are signed in.</p><div class="rowbuttons"><button class="secondary" id="exportData">Export backup</button><button class="secondary" id="importButton">Import backup</button><button class="secondary" id="signOutButton">Sign out</button><input id="importFile" type="file" accept="application/json" hidden></div></div><div class="card"><h3 style="margin:0 0 7px">About syncing</h3><p class="smallmuted">Changes made on one signed-in device synchronize with other household devices. An internet connection is needed to sync changes.</p></div>
+</section>
 <footer>Made for the books you share at home.</footer>
 </main>
 <nav class="bottomnav"><div class="navinner">
@@ -126,7 +127,7 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  if(!confirm(`Delete "${book.title}" from this device's BookTrack collection?`)) return;
  books=books.filter(item=>item.id!==id);
  localStorage.setItem(KEY,JSON.stringify(books));
- window.dispatchEvent(new Event('booktrack-local-save'));
+ window.dispatchEvent(new CustomEvent('booktrack-local-save',{detail:{deletedBookId:id}}));
  document.getElementById('scanResult').innerHTML='<b>Book deleted.</b>';
  render();
 });
