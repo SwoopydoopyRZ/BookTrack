@@ -1,4 +1,4 @@
-const CACHE = 'booktrack-static-v6';
+const CACHE = 'booktrack-static-v7';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
