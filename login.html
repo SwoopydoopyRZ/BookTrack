@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102630">
+<title>BookTrack — Household Login</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3f5f3;color:#172a32;font:16px system-ui,sans-serif;padding:20px}
+main{width:min(100%,390px);background:white;border:1px solid #e5eae7;border-radius:22px;padding:26px;box-shadow:0 12px 34px #172a3212}
+.logo{width:46px;height:46px;display:grid;place-items:center;border-radius:15px;background:#b8f0d2;color:#102630;font-size:24px}
+h1{margin:18px 0 5px;font-size:25px}p{color:#718087;font-size:14px;line-height:1.5}
+label{display:block;font-size:12px;font-weight:750;margin:20px 0 7px}
+input{width:100%;padding:13px;border:1px solid #dce4e1;border-radius:12px;font:inherit}
+button{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:#102630;color:white;font-weight:750;font-size:15px;cursor:pointer}
+button:disabled{opacity:.65}#error{color:#a33b32;min-height:20px;font-size:13px;margin:10px 0 0}
+</style>
+</head>
+<body><main>
+<div class="logo">▤</div>
+<h1>Welcome to BookTrack</h1>
+<p>Enter your shared household password to open your library.</p>
+<form id="loginForm">
+<label for="password">HOUSEHOLD PASSWORD</label>
+<input id="password" type="password" autocomplete="current-password" required autofocus>
+<button type="submit">Unlock BookTrack</button>
+<div id="error" role="alert" aria-live="polite"></div>
+</form>
+</main>
+<script>
+const form = document.getElementById('loginForm');
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = form.querySelector('button');
+  const error = document.getElementById('error');
+  button.disabled = true;
+  button.textContent = 'Checking…';
+  error.textContent = '';
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: document.getElementById('password').value }),
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+    if (response.ok) {
+      window.location.replace('/index.html');
+      return;
+    }
+    const data = await response.json().catch(() => ({}));
+    error.textContent = response.status === 401
+      ? 'That password is not correct. Please try again.'
+      : (data.error || 'Login could not be completed. Please try again.');
+  } catch {
+    error.textContent = 'Could not connect. Check your internet connection and try again.';
+  }
+  button.disabled = false;
+  button.textContent = 'Unlock BookTrack';
+});
+</script>
+</body>
+</html>
