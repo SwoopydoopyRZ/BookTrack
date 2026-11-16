@@ -1,39 +1,39 @@
-# BookTrack — VS Code + GitHub project
+# BookTrack Home
 
-This is the BookTrack web app with one shared household password.
+A mobile-friendly household book inventory that can be hosted as a static site on GitHub Pages.
 
-## Open in VS Code
-1. Extract this ZIP.
-2. In VS Code choose **File → Open Folder** and select the extracted `BookTrack-VSCode-GitHub` folder.
-3. The main app is `index.html`. Login is `login.html`. Server files are in `api/` and `middleware.js`.
+## How book data is saved
 
-## Deploy to Vercel
-1. Create a GitHub repository and upload/push the contents of this folder (not the ZIP itself).
-2. In Vercel choose **Add New → Project**, import that GitHub repository, and deploy it.
-3. In Vercel open **Project → Settings → Environment Variables**.
-4. Add `HOUSEHOLD_PASSWORD` with the shared password you choose.
-5. Add `SESSION_SECRET` with a separate long random secret. Do not use the household password again as the secret.
-6. Set both for **Production** (and Preview if you use preview deployments), save, then redeploy.
+BookTrack stores the collection in the browser's `localStorage` on the device where it is used. Saving a book writes the collection to storage immediately, so it remains available after reloading the page or closing and reopening the browser.
 
-The root of the repository must contain `index.html`, `login.html`, `middleware.js`, `package.json`, `api/`, `sw.js`, and `manifest.webmanifest`.
+**Important limitations:**
+- Storage is local to a browser on one device. A phone and a PC each have their own collection.
+- Clearing browser/site data, using private/incognito mode, or uninstalling/resetting the browser can remove local data.
+- Export a backup regularly in **Settings → Export backup**. On another device, use **Import backup**.
+- Automatic sharing between devices requires a shared online database; GitHub Pages alone does not provide one.
 
-## Test locally
-Install Node.js, then in the VS Code terminal run:
-```bash
-npm install
-npx vercel dev
-```
-Local testing also requires the two environment variables. You can create a local `.env` file with:
-```env
-HOUSEHOLD_PASSWORD=choose-a-local-test-password
-SESSION_SECRET=use-a-different-long-random-secret
-```
-Do **not** commit `.env` to GitHub. `.gitignore` excludes it.
+The app keeps the existing storage key so collections already saved in this browser under the previous BookTrack version are preserved.
 
-## Important notes
-- This is a single shared household password, not individual accounts.
-- The password protects the app pages through Vercel middleware and a signed, HttpOnly session cookie (7 days).
-- Book data remains stored in each browser/device's local storage. Password login does **not** synchronize books between devices.
-- QR/barcode libraries load from CDNs; scanning requires internet, HTTPS and camera permission.
-- The service worker was changed so it does not cache navigation responses or authenticated pages. This avoids serving a stale cached redirect/login response.
-- This project is prepared to address the previous redirect-loop issue, but it has not been deployed or tested on your Vercel account. Check the deployed login flow before relying on it.
+## Run locally
+
+Open `index.html` in a browser for basic use. For camera scanning and service-worker/PWA behavior, use a local HTTP server (for example, VS Code Live Server) or deploy to HTTPS. Camera access requires permission and a secure context.
+
+## Deploy with GitHub Pages
+
+1. Open the repository on GitHub and go to **Settings → Pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**.
+3. Select the branch `feature/github-pages-migration` and folder `/ (root)`, then save.
+4. Wait for GitHub Pages to finish publishing. The Pages URL will be shown in Settings → Pages.
+
+This branch is being prepared separately. Review and test it before merging anything into `main`.
+
+## Features
+
+- Add, search and filter household books by room.
+- Save title, unique ID, room, shelf, household member, return instructions and notes.
+- Generate QR labels and Code 128 barcodes.
+- Scan with a camera or enter a book ID manually (including USB barcode scanners that type like a keyboard).
+- Export and import JSON backups.
+- Install as a PWA from a supported mobile browser.
+
+QR/barcode libraries and camera scanning need an internet connection. Camera scanning requires HTTPS and camera permission.
