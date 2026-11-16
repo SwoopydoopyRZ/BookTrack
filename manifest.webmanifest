@@ -1,8 +1,9 @@
 {
   "name": "BookTrack Home",
   "short_name": "BookTrack",
-  "description": "A polished household book organizer with QR and barcode scanning.",
+  "description": "A household book organizer with QR and barcode scanning.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f3f5f3",
   "theme_color": "#102630",

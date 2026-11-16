@@ -1,9 +1,9 @@
-const CACHE = 'booktrack-static-v5';
+const CACHE = 'booktrack-static-v7';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache =>
-    cache.addAll(['./manifest.webmanifest'])
+    cache.addAll(['./', './manifest.webmanifest'])
   ));
 });
 
@@ -18,5 +18,5 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Do not intercept or cache navigation requests. In particular, never cache
-// the authenticated home page or a redirect to login in the public service-worker cache.
+// BookTrack's book collection is stored separately in localStorage.
+// Avoid caching page navigations so updates to the app are picked up cleanly.

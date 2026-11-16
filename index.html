@@ -32,7 +32,9 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 .bottomnav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:#ffffffed;backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}.navinner{width:100%;max-width:600px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.navinner button{border:0;background:transparent;color:#829096;border-radius:12px;padding:7px 2px 5px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.navinner button span{font-size:19px;line-height:1.2}.navinner button.active{color:var(--green);background:#eaf5ee}
 .smallmuted{font-size:11px;color:var(--muted);line-height:1.5}footer{text-align:center;color:#98a3a5;font-size:10px;padding:10px}
 @media(min-width:620px){.top{border-radius:0 0 32px 32px;padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}main{padding-left:25px;padding-right:25px}.stats{max-width:400px}.quick{grid-template-columns:repeat(2,1fr)}}
+#authGate{max-width:520px;margin:8vh auto;padding:20px}.authcard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow)}#authGate h1{margin:0 0 8px;font-size:25px;color:var(--deep)}#authGate p{color:var(--muted);font-size:13px}#authStatus{min-height:22px;font-size:12px;color:var(--green);margin-top:10px}.app{display:none}.app.ready{display:block}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script
@@ -40,7 +42,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
   onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js';document.head.appendChild(s)">
 </script>
 </head>
-<body><div class="app">
+<body><div id="authGate"><div class="authcard"><div class="brand" style="color:var(--deep);margin-bottom:20px"><div class="logo">▤</div>BookTrack HOME</div><h1>Your household library</h1><p>Sign in with an invited household email address. We will send you a one-time sign-in link.</p><form id="signInForm"><div class="field"><label for="signInEmail">EMAIL ADDRESS</label><input id="signInEmail" type="email" required autocomplete="email" placeholder="you@example.com"></div><button class="primary" id="sendSignIn" type="submit">Email me a sign-in link</button></form><div id="authStatus" role="status" aria-live="polite"></div><p class="smallmuted">Only household members invited in the Supabase project can sign in.</p></div></div><div class="app">
 <header class="top">
  <div class="topline"><div class="brand"><div class="logo">▤</div>BookTrack <span style="font-weight:500;color:#b4c7c8">HOME</span></div><div class="avatar" id="avatar">H</div></div>
  <div class="greeting"><div class="eyebrow">Your household library</div><h1>Every book has<br>a place.</h1><p>Find it, scan it, put it back.</p></div>
@@ -81,8 +83,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 <section id="settings" class="screen">
  <div class="section-head"><div><h2>Household settings</h2><p>Keep everyone's book list together</p></div></div>
  <div class="card"><div class="field"><label>HOUSEHOLD NAME</label><input id="houseName" placeholder="e.g. The Miller Home"></div><div class="field"><label>HOUSEHOLD INITIALS</label><input id="houseInitials" maxlength="3" placeholder="e.g. MH"></div><button class="primary" id="saveHouse">Save household details</button></div>
- <div class="card"><h3 style="margin:0 0 7px">Backup & share between phones</h3><p class="smallmuted">Export your household collection on one phone, then import the file on another. This version does not sync automatically.</p><div class="rowbuttons"><button class="secondary" id="exportData">Export backup</button><button class="secondary" id="importButton">Import backup</button><input id="importFile" type="file" accept="application/json" hidden></div></div>
- <div class="card"><h3 style="margin:0 0 7px">A quick note</h3><p class="smallmuted">BookTrack saves your list in this browser on this device. For live syncing between family phones, a private online database and household sign-in need to be added. Keep backup files private.</p></div>
+ <div class="card"><h3 style="margin:0 0 7px">Shared household collection</h3><p class="smallmuted" id="syncStatus">Your books sync through the shared database while you are signed in.</p><div class="rowbuttons"><button class="secondary" id="exportData">Export backup</button><button class="secondary" id="importButton">Import backup</button><button class="secondary" id="signOutButton">Sign out</button><input id="importFile" type="file" accept="application/json" hidden></div></div><div class="card"><h3 style="margin:0 0 7px">About syncing</h3><p class="smallmuted">Changes made on one signed-in device synchronize with other household devices. An internet connection is needed to sync changes.</p></div>
 </section>
 <footer>Made for the books you share at home.</footer>
 </main>
@@ -93,7 +94,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 <script>
 const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1';let books=load(),reader=null,activeRoom='';
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
-function save(){localStorage.setItem(KEY,JSON.stringify(books));render()}
+function save(){localStorage.setItem(KEY,JSON.stringify(books));render();window.dispatchEvent(new Event('booktrack-local-save'))}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function buzz(){if(navigator.vibrate)navigator.vibrate(12)}
 function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id!=='scan')stopCamera();window.scrollTo({top:0,behavior:'smooth'})}
@@ -125,7 +126,8 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  if(!book) return;
  if(!confirm(`Delete "${book.title}" from this device's BookTrack collection?`)) return;
  books=books.filter(item=>item.id!==id);
- localStorage.setItem(STORE,JSON.stringify(books));
+ localStorage.setItem(KEY,JSON.stringify(books));
+ window.dispatchEvent(new CustomEvent('booktrack-local-save',{detail:{deletedBookId:id}}));
  document.getElementById('scanResult').innerHTML='<b>Book deleted.</b>';
  render();
 });
@@ -185,5 +187,7 @@ document.getElementById('exportData').onclick=()=>{const h=JSON.parse(localStora
 document.getElementById('importButton').onclick=()=>importFile.click();
 document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),incoming=Array.isArray(j)?j:j.books;if(!Array.isArray(incoming)||incoming.some(b=>!b.id||!b.title||!b.room||!b.destination))throw Error();const map=new Map(books.map(b=>[b.id.toLowerCase(),b]));incoming.forEach(b=>map.set(b.id.toLowerCase(),b));books=[...map.values()];if(j.household)localStorage.setItem(HOUSE,JSON.stringify(j.household));save();applyHouse();alert('Household collection imported.')}catch{alert('This does not look like a BookTrack backup.')}e.target.value=''};
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+window.BookTrack={getBooks:()=>books,replaceBooks(next){books=next;localStorage.setItem(KEY,JSON.stringify(books));render()}};
 applyHouse();render();
-</script></body></html>
+</script>
+<script src="./cloud.js"></script></body></html>
