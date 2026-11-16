@@ -35,7 +35,7 @@ After the first successful deployment, add the published site URL to Supabase Au
 - Shared online collection with live refresh across signed-in devices.
 - Email magic-link sign-in.
 - QR code and Code 128 barcode generation and scanning.
-- Scan a saved book's ISBN or BookTrack label to see its title, room and shelf. Look up an ISBN through Open Library and Google Books, then review and add the result to your collection.
+- Scan a saved book's ISBN or BookTrack label to see its title, room and shelf. On the Add a book screen, scan a new book's ISBN with your phone camera to look up its details, choose a room and shelf, then save it.
 - JSON export/import backups.
 - Installable PWA support.
 

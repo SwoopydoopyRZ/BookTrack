@@ -77,7 +77,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <div class="field"><label for="destination">RETURN INSTRUCTIONS</label><textarea id="destination" maxlength="400" placeholder="e.g. Put it back on the blue bookcase"></textarea></div>
  <div class="field"><label for="details">EXTRA NOTES</label><textarea id="details" maxlength="400" placeholder="Anything else to remember"></textarea></div>
  </details>
- <div class="field"><label for="isbn">ISBN / BOOK BARCODE (OPTIONAL)</label><div class="rowbuttons"><input id="isbn" maxlength="20" placeholder="e.g. 9780140328721"><button class="secondary" id="lookupIsbn" type="button">Look up</button></div><p class="smallmuted" id="isbnStatus" role="status" aria-live="polite">A book's ISBN barcode can fill in its title and author.</p></div>
+ <div class="field"><label for="isbn">ISBN / BOOK BARCODE (OPTIONAL)</label><div class="rowbuttons"><input id="isbn" maxlength="20" placeholder="e.g. 9780140328721"><button class="secondary" id="lookupIsbn" type="button">Look up</button></div><button class="secondary" id="scanIsbnForAdd" type="button" style="width:100%;margin-top:9px">Scan barcode with phone camera</button><p class="smallmuted" id="isbnStatus" role="status" aria-live="polite">A book's ISBN barcode can fill in its title and author.</p></div>
  <input id="bookId" type="hidden">
  <button class="primary" type="submit">Save to my collection</button>
  </form></div>
@@ -107,7 +107,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 </div></nav>
 </div>
 <script>
-const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,scannedBookDetails=null,activeRoom='';
+const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,scannedBookDetails=null,scanForAdd=false,activeRoom='';
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
 function loadLocations(){try{return normalizeLocations(JSON.parse(localStorage.getItem(LOCATIONS_KEY)||'[]'))}catch(error){console.warn('Could not read saved rooms and shelves.',error);return []}}
 function normalizeLocations(items){
@@ -220,7 +220,7 @@ function showISBNResult(book){
  scannedBookDetails=book;
  document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b>${esc(book.title)}</b>${book.author?`<p><b>Author:</b> ${esc(book.author)}</p>`:''}${book.publisher?`<p><b>Publisher:</b> ${esc(book.publisher)}${book.year?', '+esc(book.year):''}</p>`:''}<p class="smallmuted">Details from ${esc(book.source||'Open Library')} for ISBN ${esc(book.isbn)}. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
 }
-function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id!=='scan')stopCamera();if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id!=='scan'){stopCamera();scanForAdd=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderAddLocationOptions(selectedRoom=document.getElementById('room').value,selectedShelf=document.getElementById('shelf').value){
  const roomSelect=document.getElementById('room'),shelfSelect=document.getElementById('shelf');
@@ -373,12 +373,31 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  render();
 });
 async function lookup(raw){
- const id=raw.trim();
+ const id=raw.trim(),shouldAddScannedBook=scanForAdd;
+ scanForAdd=false;
  try{const j=JSON.parse(id);if(j.app==='BookTrackHome'||j.app==='BookTrack'){document.getElementById('scanResult').innerHTML=bookResult(j,'QR label');return}}catch{}
  const b=books.find(x=>x.id.toLowerCase()===id.toLowerCase());
  if(b){document.getElementById('scanResult').innerHTML=bookResult(b,'household list');return}
  if(isValidISBN(id)){
    const scannedISBN=canonicalISBN(id),matches=books.filter(book=>book.isbn&&canonicalISBN(book.isbn)===scannedISBN);
+   if(shouldAddScannedBook){
+     if(matches.length){
+       fillBookDetails(matches[0]);
+       renderAddLocationOptions('','');
+       document.getElementById('isbnStatus').textContent='This book is already in your collection. Choose a room and shelf; saving will warn you about the duplicate.';
+       go('add');
+       return;
+     }
+     document.getElementById('scanResult').textContent='Barcode detected. Looking up the book…';
+     try{
+       const details=await fetchISBNDetails(id);
+       fillBookDetails(details);
+       renderAddLocationOptions('','');
+       document.getElementById('isbnStatus').textContent='Book found. Choose a room and shelf, then save it to your collection.';
+       go('add');
+     }catch(error){document.getElementById('scanResult').textContent=error.message}
+     return;
+   }
    if(matches.length){document.getElementById('scanResult').innerHTML=matches.map(book=>bookResult(book,'ISBN barcode in your collection')).join('<hr>');return}
    document.getElementById('scanResult').textContent='Looking up this ISBN…';
    try{showISBNResult(await fetchISBNDetails(id))}
@@ -396,6 +415,12 @@ document.getElementById('lookupIsbn').onclick=async()=>{
  finally{button.disabled=false}
 };
 document.getElementById('manualLookup').onclick=()=>lookup(manualCode.value);
+document.getElementById('scanIsbnForAdd').onclick=()=>{
+ scanForAdd=true;
+ go('scan');
+ document.getElementById('scanResult').textContent='Point your camera at the book’s ISBN barcode.';
+ startCamera();
+};
 const manualCodeInput=document.getElementById('manualCode');
 function submitScannedCode(){
   const code=manualCodeInput.value.trim();
@@ -447,6 +472,7 @@ async function startCamera(){
     if(token!==cameraStartToken)return;
     stopCamera();
     console.error('BookTrack scanner error:',e);
+    scanForAdd=false;
     status.textContent='Scanner could not start: '+e.message+' You can still type or scan an ISBN or BookTrack ID below.';
   }
 }
@@ -460,7 +486,7 @@ function stopCamera(){
  const startButton=document.getElementById('startScan');
  startButton.hidden=false;startButton.disabled=false;startButton.textContent='Start camera';
 }
-document.getElementById('startScan').onclick=startCamera;document.getElementById('stopScan').onclick=stopCamera;
+document.getElementById('startScan').onclick=()=>{scanForAdd=false;startCamera()};document.getElementById('stopScan').onclick=()=>{scanForAdd=false;stopCamera()};
 function applyHouse(){try{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}');document.getElementById('houseName').value=h.name||'';document.getElementById('houseInitials').value=h.initials||'';document.getElementById('avatar').textContent=h.initials||'H'}catch{}}
 document.getElementById('saveHouse').onclick=()=>{const h={name:houseName.value.trim(),initials:houseInitials.value.trim().toUpperCase()};localStorage.setItem(HOUSE,JSON.stringify(h));document.getElementById('avatar').textContent=h.initials||'H';buzz();alert('Household details saved.')};
 document.getElementById('exportData').onclick=()=>{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}'),blob=new Blob([JSON.stringify({app:'BookTrackHomeBackup',version:3,household:h,books,locations},null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='booktrack-home-backup.json';a.click();URL.revokeObjectURL(u)};
