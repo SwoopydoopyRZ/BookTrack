@@ -1,62 +1,43 @@
-# Supabase setup for BookTrack
+# Supabase + GitHub setup for BookTrack
 
-Complete these steps in your Supabase project before using the shared BookTrack branch.
+BookTrack's database schema is versioned in `supabase/migrations/`. Once the official Supabase GitHub integration is connected, Supabase applies new migration files automatically. You do not need to paste SQL into the SQL Editor.
 
-## 1. Create the database table and security policies
+## 1. Connect Supabase to GitHub (one-time authorization)
 
-1. Open the Supabase project dashboard.
-2. Select **SQL Editor** → **New query**.
-3. Open `supabase-setup.sql` in this repository branch and copy its complete contents.
-4. Paste the SQL into the editor and run it.
-5. In **Table Editor**, confirm that a `public.books` table exists and that RLS is enabled.
+1. Open the [BookTrack Supabase project](https://supabase.com/dashboard/project/pjeeconeytobwztumkan).
+2. Open **Project Settings → Integrations**.
+3. Find **GitHub Integration** and choose **Authorize GitHub**.
+4. On GitHub, authorize the Supabase app and grant it access to the `SwoopydoopyRZ/BookTrack` repository.
+5. Return to Supabase, select `SwoopydoopyRZ/BookTrack`, and set **Working directory** to `.` (the `supabase/` folder is at the repository root).
+6. Enable the integration and save.
 
-The policies allow authenticated users to access the shared collection. They do not allow anonymous visitors to read or change books.
+Supabase's GitHub integration watches repository branches and pull requests. It deploys migrations from `supabase/migrations/`. See the [official GitHub integration guide](https://supabase.com/docs/guides/deployment/branching/github-integration).
 
-## 2. Keep registration closed
+## 2. Choose when database changes go live
 
-1. Open **Authentication** → **Sign In / Providers** (the exact menu wording may vary).
-2. Open the **Email** provider settings.
-3. Turn off **Allow new users to sign up** / public sign-ups.
-4. Keep email authentication enabled.
+- **Production deployment:** Enable **Deploy to production** and select the repository's production branch (`main`). New migrations are applied to the live Supabase project when changes reach that branch.
+- **Preview database for pull requests:** Enable automatic branching if your Supabase plan supports Branching. Supabase creates a separate preview database for a pull request and applies the migration there. This lets us test before merging.
+- GitHub integration and production migration deployment are available on all plans; isolated preview branching may require Pro.
 
-BookTrack requests magic links with account creation disabled. Only users you have invited should be able to sign in.
+The current BookTrack work is on `feature/github-pages-migration`, not `main`. Do not merge it until the app and database migration have been reviewed. If preview branching is not available, the migration will reach the production database only after you approve merging the feature branch into `main`.
 
-## 3. Set the allowed redirect URL
+## 3. Keep access private
 
-Open **Authentication** → **URL Configuration**.
+In Supabase **Authentication** settings:
 
-For the GitHub Pages project site, set the Site URL to:
+1. Keep email authentication enabled.
+2. Disable public sign-ups.
+3. Invite household members individually under **Authentication → Users**.
+4. Set the correct GitHub Pages site URL under **Authentication → URL Configuration** and add it to the allowed redirect URLs.
 
-`https://swoopydoopyrz.github.io/BookTrack/`
+The migration enables Row Level Security and grants table access only to authenticated users. Every authenticated account in this project can access the shared household collection, so only invite people you trust.
 
-Add this same address to the allowed Redirect URLs list. If you later use a custom domain or a different Pages URL, update both settings to match it exactly.
+## 4. Email delivery
 
-## 4. Invite household members
+Supabase's default email sender has delivery restrictions. For dependable household sign-in, configure a trusted custom SMTP provider in Supabase Auth settings. Keep SMTP credentials and Supabase secret/service-role keys out of GitHub and browser code.
 
-1. Open **Authentication** → **Users**.
-2. Choose **Add user** → **Send invitation**.
-3. Enter the household member's email address and send the invitation.
-4. They should accept the invitation email first.
-5. After that, they can open BookTrack and request a one-time sign-in link using that same email address.
+## 5. Verify deployment
 
-Do not turn public sign-ups back on just to add a family member. Invite each person from the dashboard.
+After Supabase reports the migration as successful, open **Table Editor** and confirm that `public.books` exists and RLS is enabled. Then test sign-in, adding a test book, and seeing it on another signed-in device.
 
-## 5. Email delivery
-
-Supabase's built-in email sender is intended mainly for testing and has delivery restrictions. Before relying on household sign-in, configure a trusted custom SMTP provider under the Supabase Authentication email settings. Do not put SMTP credentials in this GitHub repository or in the browser app.
-
-## 6. Test privately before sharing
-
-1. Publish or preview the feature branch using GitHub Pages.
-2. Sign in with an invited email address.
-3. Add a test book and wait for the sync status to say it is synchronized.
-4. Open BookTrack on another device and sign in with another invited email address.
-5. Confirm the test book appears, then test adding and deleting a test record.
-6. Try opening the app in a signed-out/private browser window; it should show the sign-in screen and the database should deny anonymous access.
-
-## Security notes
-
-- The key in `cloud.js` is a Supabase publishable key. It is designed to be included in browser code.
-- Never put a Supabase secret key or legacy service-role key in GitHub, HTML, JavaScript, or a public website.
-- Keep public sign-ups disabled. The current RLS policy treats every authenticated account in this Supabase project as a household member, so only invite people you trust.
-- Keep using **Settings → Export backup** as an occasional backup. The online database is the shared source of truth, but backups are still useful.
+The publishable key in `cloud.js` is designed for browser use. Never put a secret/service-role key in this repository.
