@@ -32,7 +32,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 .note{background:var(--soft);color:var(--green);border-radius:13px;padding:12px;font-size:12px;line-height:1.5}
 #video{width:100%;background:#0c171c;border-radius:16px;max-height:340px;min-height:190px;object-fit:cover}
 .result{margin-top:12px;background:var(--soft);border-radius:15px;padding:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.result h3{margin:0 0 8px;font-size:15px}
-.codes{display:flex;flex-wrap:wrap;gap:12px}.codebox{flex:1;min-width:145px;text-align:center;border:1px dashed var(--line);border-radius:14px;padding:12px;background:var(--surface)}.codebox canvas,.codebox svg{max-width:100%;height:auto}
+.codes{display:flex;flex-wrap:wrap;gap:12px}.codebox{flex:1;min-width:145px;text-align:center;border:1px dashed var(--line);border-radius:14px;padding:12px;background:var(--surface)}.codebox canvas,.codebox svg,.codebox img{max-width:100%;height:auto}
 .bottomnav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}.navinner{width:100%;max-width:600px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.navinner button{border:0;background:transparent;color:var(--nav-muted);border-radius:12px;padding:7px 2px 5px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.navinner button span{font-size:19px;line-height:1.2}.navinner button.active{color:var(--green);background:var(--nav-active-bg)}
 .quick-search-dock{position:fixed;z-index:6;left:0;right:0;bottom:calc(68px + env(safe-area-inset-bottom));padding:8px 12px;background:var(--bg)}.quick-search-inner{max-width:736px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:8px 12px}.quick-search-inner input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);padding:5px 0}.quick-search-inner input::placeholder{color:var(--muted);opacity:.85}.quick-search-results{max-height:38vh;overflow:auto;border-top:1px solid var(--line);margin-top:7px}.quick-search-results[hidden]{display:none}.quick-search-result{padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.quick-search-result:last-child{border-bottom:0}.quick-search-result b,.quick-search-result small{display:block}.quick-search-result small{color:var(--muted);font-size:11px;margin-top:3px}
 .quick-search-dock[hidden]{display:none}
@@ -42,7 +42,10 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 #authGate{max-width:520px;margin:8vh auto;padding:20px}.authcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow)}#authGate h1{margin:0 0 8px;font-size:25px;color:var(--deep)}#authGate p{color:var(--muted);font-size:13px}#authStatus{min-height:22px;font-size:12px;color:var(--green);margin-top:10px}.app{display:none}.app.ready{display:block}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';document.head.appendChild(s)">
+</script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script
   src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"
@@ -427,17 +430,28 @@ document.getElementById('makeCodes').onclick=()=>{
  const fileName=labelFileName(b.title),box=document.createElement('div');
  box.className='codebox';
  if(type==='qr'){
-  if(typeof QRCode==='undefined'){status.textContent='The QR code generator is unavailable. Check your internet connection and try again.';return}
-  box.innerHTML=`<b>${esc(b.title)}</b><canvas></canvas><p class="smallmuted">QR code with location details</p><button class="secondary" type="button">Save QR image</button>`;
-  out.append(box);
-  const canvas=box.querySelector('canvas');
-  QRCode.toCanvas(canvas,payload(b),{width:210,margin:2}).then(()=>{
+  if(typeof window.qrcode!=='function'){status.textContent='The QR code generator could not load. Check your internet connection and try again.';return}
+  try{
+   const qr=window.qrcode(0,'M');
+   qr.addData(payload(b));
+   qr.make();
+   const svg=qr.createSvgTag(4,4),image=document.createElement('img');
+   image.alt='QR code for '+b.title;
+   image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+   box.innerHTML=`<b>${esc(b.title)}</b><p class="smallmuted">QR code with location details</p>`;
+   box.insertBefore(image,box.lastChild);
+   const saveButton=document.createElement('button');
+   saveButton.className='secondary';
+   saveButton.type='button';
+   saveButton.textContent='Save QR image';
+   saveButton.onclick=()=>{const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),a=document.createElement('a');a.href=url;a.download='BookTrack-'+fileName+'-QR.svg';a.click();URL.revokeObjectURL(url)};
+   box.append(saveButton);
+   out.append(box);
    status.textContent='QR code ready for '+b.title+'.';
-   box.querySelector('button').onclick=()=>{const a=document.createElement('a');a.download='BookTrack-'+fileName+'-QR.png';a.href=canvas.toDataURL();a.click()};
-  }).catch(error=>{
+  }catch(error){
    console.error('Could not generate the book QR code.',error);
-   status.textContent='Could not generate the QR code. Check the connection and try again.';
-  });
+   status.textContent='Could not generate the QR code for this book. Try a barcode instead.';
+  }
  }else{
   if(typeof JsBarcode==='undefined'){status.textContent='The barcode generator is unavailable. Check your internet connection and try again.';return}
   box.innerHTML=`<b>${esc(b.title)}</b><svg></svg><p class="smallmuted">Barcode using the book title</p><button class="secondary" type="button">Save barcode</button>`;
