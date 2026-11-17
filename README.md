@@ -33,6 +33,8 @@ After the first successful deployment, add the published site URL to Supabase Au
 - Switch between light and dark themes in Settings; the choice is saved on the current device.
 - Manage shared rooms and each room's shelves in Settings; select a room and shelf when adding a book.
 - Add a series or collection name to a book; books with the same name are automatically grouped in collapsible sections on the home screen. Series names can be selected from existing books or edited from a saved book's details; catalog results may not include series information.
+- Choose a book edition language when adding it, including a custom language. The language is stored with the book and synced across devices.
+- Change the app interface language in Settings: English, German, Romanian, or Hungarian. The preference is saved on the current device.
 - Make book labels by choosing a book by name and selecting QR code or barcode; barcodes contain the title rather than the generated book ID.
 - Track borrowed library books in the Loans tab. Scan an ISBN to fill book details, set a 30-day default return date, see an in-app countdown and mark books returned. Library loans sync separately from owned books.
 - Shared online collection with live refresh across signed-in devices.

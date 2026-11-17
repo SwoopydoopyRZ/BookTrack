@@ -76,6 +76,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <p class="smallmuted">Add a title, a room and a shelf choice. Add a series name to group related books automatically.</p>
  <div class="field"><label for="bookName">BOOK TITLE</label><input id="bookName" required maxlength="100" placeholder="e.g. The Hobbit"></div>
  <div class="field"><label for="author">AUTHOR (OPTIONAL)</label><input id="author" maxlength="120" placeholder="Filled in by book search or ISBN lookup"></div>
+ <div class="field"><label for="bookLanguage">BOOK LANGUAGE / EDITION (OPTIONAL)</label><select id="bookLanguage"><option value="">Not specified</option><option value="English">English</option><option value="German">German</option><option value="Romanian">Romanian</option><option value="Hungarian">Hungarian</option><option value="other">Other</option></select><input id="bookLanguageOther" maxlength="60" placeholder="Enter the book language" hidden style="margin-top:8px"></div>
  <div class="field"><label for="bookSeries">BOOK SERIES / COLLECTION (OPTIONAL)</label><input id="bookSeries" maxlength="120" list="bookSeriesList" placeholder="e.g. Harry Potter"><datalist id="bookSeriesList"></datalist></div>
  <div class="field"><label for="room">ROOM</label><select id="room" required><option value="">Choose a room</option></select></div>
  <div class="field"><label for="shelf">SHELF OR SPOT</label><select id="shelf" required><option value="">Choose a shelf</option></select></div>
@@ -118,6 +119,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 </section>
 <section id="settings" class="screen">
  <div class="section-head"><div><h2>Household settings</h2><p>Keep everyone's book list together</p></div></div>
+ <div class="card"><div class="field"><label for="languageSelect">APP LANGUAGE</label><select id="languageSelect"><option value="en">English</option><option value="de">Deutsch</option><option value="ro">Română</option><option value="hu">Magyar</option></select><p class="smallmuted">Choose the language used for app buttons, labels and messages. This setting is saved on this device.</p></div></div>
  <div class="card"><div class="field"><label for="themeSelect">APP THEME</label><select id="themeSelect"><option value="light">Light</option><option value="dark">Dark</option></select><p class="smallmuted">Theme preference is saved on this device.</p></div></div>
  <div class="card"><h3 style="margin:0 0 7px">Rooms and shelves</h3><p class="smallmuted">Manage the shared room list and the shelves in each room. These choices appear when adding a book.</p><form id="roomForm"><div class="field"><label for="newRoomName">ADD A ROOM</label><div class="rowbuttons"><input id="newRoomName" maxlength="60" placeholder="e.g. Living room"><button class="secondary" type="submit">Add room</button></div></div></form><p class="smallmuted" id="roomSettingsStatus" role="status" aria-live="polite"></p><div id="roomManager"></div></div>
  <div class="card"><div class="field"><label>HOUSEHOLD NAME</label><input id="houseName" placeholder="e.g. The Miller Home"></div><div class="field"><label>HOUSEHOLD INITIALS</label><input id="houseInitials" maxlength="3" placeholder="e.g. MH"></div><button class="primary" id="saveHouse">Save household details</button></div>
@@ -130,6 +132,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 <button class="active" data-tab="home"><span>⌂</span>Home</button><button data-tab="scan"><span>▦</span>Scan</button><button data-tab="loans"><span>◷</span>Loans</button><button data-tab="codes"><span>▤</span>Labels</button><button data-tab="settings"><span>⚙</span>Settings</button>
 </div></nav>
 </div>
+<script src="./i18n.js"></script>
 <script>
 const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,cameraMode='find',scannedBookDetails=null,scanForAdd=false,scanForLoan=false,libraryLoans=[],loansReady=false,loanSaveRunning=false,activeRoom='';
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
@@ -244,31 +247,31 @@ function findDuplicateBook(book){
 }
 function showISBNResult(book){
  scannedBookDetails=book;
- document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b>${esc(book.title)}</b>${book.author?`<p><b>Author:</b> ${esc(book.author)}</p>`:''}${book.publisher?`<p><b>Publisher:</b> ${esc(book.publisher)}${book.year?', '+esc(book.year):''}</p>`:''}<p class="smallmuted">Details from ${esc(book.source||'Open Library')} for ISBN ${esc(book.isbn)}. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
+ document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b translate="no">${esc(book.title)}</b>${book.author?`<p><b>Author:</b> <span translate="no">${esc(book.author)}</span></p>`:''}${book.publisher?`<p><b>Publisher:</b> <span translate="no">${esc(book.publisher)}${book.year?', '+esc(book.year):''}</span></p>`:''}<p class="smallmuted">Details from <span translate="no">${esc(book.source||'Open Library')}</span> for ISBN <span translate="no">${esc(book.isbn)}</span>. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
 }
 function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'||cameraMode==='add'){stopCamera();scanForAdd=false;scanForLoan=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderAddLocationOptions(selectedRoom=document.getElementById('room').value,selectedShelf=document.getElementById('shelf').value){
  const roomSelect=document.getElementById('room'),shelfSelect=document.getElementById('shelf');
- roomSelect.innerHTML='<option value="">Choose a room</option>'+locations.map(room=>`<option value="${esc(room.name)}">${esc(room.name)}</option>`).join('');
+ roomSelect.innerHTML='<option value="">Choose a room</option>'+locations.map(room=>`<option translate="no" value="${esc(room.name)}">${esc(room.name)}</option>`).join('');
  roomSelect.value=locations.some(room=>room.name===selectedRoom)?selectedRoom:'';
  const room=locations.find(item=>item.name===roomSelect.value);
- shelfSelect.innerHTML='<option value="">Choose a shelf</option><option value=" ">No shelf / not assigned</option>'+(room?room.shelves.map(shelf=>`<option value="${esc(shelf)}">${esc(shelf)}</option>`).join(''):'');
+ shelfSelect.innerHTML='<option value="">Choose a shelf</option><option value=" ">No shelf / not assigned</option>'+(room?room.shelves.map(shelf=>`<option translate="no" value="${esc(shelf)}">${esc(shelf)}</option>`).join(''):'');
  shelfSelect.value=room&&room.shelves.includes(selectedShelf)?selectedShelf:'';
 }
 function renderLocations(){
  const manager=document.getElementById('roomManager');
  manager.innerHTML=locations.length?locations.map((room,roomIndex)=>{
   const booksInRoom=books.filter(book=>locationKey(book.room)===locationKey(room.name)).length;
-  return `<div class="location-room"><div class="location-room-head"><b>${esc(room.name)}</b><button class="secondary" type="button" data-remove-room="${roomIndex}"${booksInRoom?' title="Remove books from this room first"':''}>Remove room</button></div><p class="smallmuted">${room.shelves.length?room.shelves.map((shelf,shelfIndex)=>`<span class="shelf-chip">${esc(shelf)} <button type="button" aria-label="Remove ${esc(shelf)} shelf" data-remove-shelf="${roomIndex}:${shelfIndex}"${books.some(book=>locationKey(book.room)===locationKey(room.name)&&locationKey(book.shelf)===locationKey(shelf))?' title="Remove books from this shelf first"':''}>×</button></span>`).join(' '):'No shelves added yet.'}</p><form class="shelf-form" data-room-index="${roomIndex}"><div class="rowbuttons"><input class="shelf-input" maxlength="80" placeholder="Add a shelf or spot" aria-label="New shelf in ${esc(room.name)}"><button class="secondary" type="submit">Add shelf</button></div></form></div>`;
+  return `<div class="location-room"><div class="location-room-head"><b translate="no">${esc(room.name)}</b><button class="secondary" type="button" data-remove-room="${roomIndex}"${booksInRoom?' title="Remove books from this room first"':''}>Remove room</button></div><p class="smallmuted">${room.shelves.length?room.shelves.map((shelf,shelfIndex)=>`<span class="shelf-chip"><span translate="no">${esc(shelf)}</span> <button type="button" aria-label="Remove ${esc(shelf)} shelf" data-remove-shelf="${roomIndex}:${shelfIndex}"${books.some(book=>locationKey(book.room)===locationKey(room.name)&&locationKey(book.shelf)===locationKey(shelf))?' title="Remove books from this shelf first"':''}>×</button></span>`).join(' '):'No shelves added yet.'}</p><form class="shelf-form" data-room-index="${roomIndex}"><div class="rowbuttons"><input class="shelf-input" maxlength="80" placeholder="Add a shelf or spot" aria-label="New shelf in ${esc(room.name)}"><button class="secondary" type="submit">Add shelf</button></div></form></div>`;
  }).join(''):'<p class="smallmuted">No rooms yet. Add a room above, then add its shelves.</p>';
  renderAddLocationOptions();
 }
 function render(){
  document.getElementById('bookCount').textContent=books.length;document.getElementById('roomCount').textContent=locations.length;
- const rooms=locations.map(room=>room.name).sort(),p=document.getElementById('roomPills');p.innerHTML='<button class="'+(!activeRoom?'active':'')+'" data-room="">All books</button>'+rooms.map(r=>`<button class="${activeRoom===r?'active':''}" data-room="${esc(r)}">${esc(r)}</button>`).join('');
+ const rooms=locations.map(room=>room.name).sort(),p=document.getElementById('roomPills');p.innerHTML='<button class="'+(!activeRoom?'active':'')+'" data-room="">All books</button>'+rooms.map(r=>`<button translate="no" class="${activeRoom===r?'active':''}" data-room="${esc(r)}">${esc(r)}</button>`).join('');
  p.querySelectorAll('button').forEach(b=>b.onclick=()=>{activeRoom=b.dataset.room;render()});
- const q=document.getElementById('search').value.toLowerCase(),shown=books.filter(b=>(!activeRoom||b.room===activeRoom)&&[b.title,b.author,b.series,b.isbn,b.id,b.room,b.shelf,b.member].join(' ').toLowerCase().includes(q));
+ const q=document.getElementById('search').value.toLowerCase(),shown=books.filter(b=>(!activeRoom||b.room===activeRoom)&&[b.title,b.author,b.language,b.series,b.isbn,b.id,b.room,b.shelf,b.member].join(' ').toLowerCase().includes(q));
  const list=document.getElementById('bookList');list.innerHTML='';
  if(!shown.length){list.innerHTML=`<div class="empty"><div class="emoji">📚</div><b>${books.length?'No books found':'Your shelves are waiting'}</b><span>${books.length?'Try another search or room.':'Add your first book to start your home library.'}</span></div>`}
  const seriesGroups=new Map(),unbundled=[];
@@ -282,21 +285,22 @@ function render(){
  seriesGroups.forEach(group=>{
   const section=document.createElement('details');section.className='series-group';
   const summary=document.createElement('summary'),name=document.createElement('b'),count=document.createElement('small');
-  name.textContent=group.name;count.textContent=group.books.length+' book'+(group.books.length===1?'':'s');
+  name.textContent=group.name;name.setAttribute('translate','no');count.dataset.bookCount=group.books.length;count.textContent=group.books.length+' '+window.BookTrackI18n.t(group.books.length===1?'book':'books');
   summary.append(name,count);section.append(summary);
   group.books.forEach(book=>section.append(createBookRow(book)));
   list.append(section);
  });
  unbundled.forEach(book=>list.append(createBookRow(book)));
  renderLabelBookOptions();
- const seriesList=document.getElementById('bookSeriesList');seriesList.innerHTML=[...new Set(books.map(book=>String(book.series||'').trim()).filter(Boolean))].map(series=>`<option value="${esc(series)}"></option>`).join('');
+ const seriesList=document.getElementById('bookSeriesList');seriesList.innerHTML=[...new Set(books.map(book=>String(book.series||'').trim()).filter(Boolean))].map(series=>`<option translate="no" value="${esc(series)}"></option>`).join('');
  renderLocations();
  renderQuickSearch();
  renderLoans();
+ window.BookTrackI18n.apply();
 }
 function createBookRow(book){
  const el=document.createElement('div');el.className='bookrow';
- el.innerHTML=`<div class="bookcover">📖</div><div class="bookmeta"><b>${esc(book.title)}</b><small>${esc(book.room)}${book.shelf?' · '+esc(book.shelf):''}</small><small>${esc(book.author||book.id)}</small></div><div class="arrow">›</div>`;
+ el.innerHTML=`<div class="bookcover">📖</div><div class="bookmeta"><b translate="no">${esc(book.title)}</b><small translate="no">${esc(book.room)}${book.shelf?' · '+esc(book.shelf):''}</small><small translate="no">${esc(book.author||book.id)}</small>${book.language?`<small>${esc(book.language)}</small>`:''}</div><div class="arrow">›</div>`;
  el.onclick=()=>{document.getElementById('scanResult').innerHTML=bookResult(book,'your collection');go('scan')};
  return el;
 }
@@ -306,7 +310,7 @@ function renderLabelBookOptions(){
  select.innerHTML='<option value="">Choose a book</option>'+sortedBooks.map(book=>{
   const location=[book.room,book.shelf].filter(Boolean).join(' · ');
   const label=[book.title,book.author,location].filter(Boolean).join(' — ');
-  return `<option value="${esc(book.id)}">${esc(label)}</option>`;
+  return `<option translate="no" value="${esc(book.id)}">${esc(label)}</option>`;
  }).join('');
  select.value=books.some(book=>book.id===previousId)?previousId:'';
  document.getElementById('makeCodes').disabled=!books.length;
@@ -317,10 +321,10 @@ function renderQuickSearch(){
  const input=document.getElementById('quickSearch'),results=document.getElementById('quickSearchResults'),query=input.value.trim().toLocaleLowerCase();
  results.innerHTML='';
  if(!query){results.hidden=true;return}
- const matches=books.filter(book=>[book.title,book.author,book.series].some(value=>String(value||'').toLocaleLowerCase().includes(query)));
+ const matches=books.filter(book=>[book.title,book.author,book.language,book.series].some(value=>String(value||'').toLocaleLowerCase().includes(query)));
  results.hidden=false;
  if(!matches.length){results.innerHTML='<div class="quick-search-result smallmuted">No matching books in your collection.</div>';return}
- results.innerHTML=matches.map(book=>`<div class="quick-search-result" role="listitem" tabindex="0" data-quick-book="${esc(book.id)}"><b>${esc(book.title)}</b><small>${esc(book.author||'Author not listed')} · Room: ${esc(book.room||'Not set')} · Shelf: ${esc(book.shelf||'Not set')}</small></div>`).join('');
+ results.innerHTML=matches.map(book=>`<div class="quick-search-result" role="listitem" tabindex="0" data-quick-book="${esc(book.id)}"><b translate="no">${esc(book.title)}</b><small>${book.author?`<span translate="no">${esc(book.author)}</span>`:'Author not listed'}${book.language?' · <span>'+esc(book.language)+'</span>':''} · <span>Room:</span> ${book.room?`<span translate="no">${esc(book.room)}</span>`:'Not set'} · <span>Shelf:</span> ${book.shelf?`<span translate="no">${esc(book.shelf)}</span>`:'Not set'}</small></div>`).join('');
 }
 function localDateString(date=new Date()){
  const year=date.getFullYear(),month=String(date.getMonth()+1).padStart(2,'0'),day=String(date.getDate()).padStart(2,'0');
@@ -346,36 +350,44 @@ function daysUntilDue(dueDate){
 }
 function renderLoans(){
  const list=document.getElementById('loanList'),active=libraryLoans.filter(loan=>!loan.returned_at).sort((a,b)=>String(a.due_on).localeCompare(String(b.due_on))),returned=libraryLoans.filter(loan=>loan.returned_at).sort((a,b)=>String(b.returned_at).localeCompare(String(a.returned_at)));
+ const translate=window.BookTrackI18n.t,dateFormat=new Intl.DateTimeFormat(window.BookTrackI18n.getLanguage());
  list.innerHTML='';
- if(!active.length)list.innerHTML='<div class="empty"><div class="emoji">📚</div><b>No books to return</b><span>Scan a library book to start a loan and its countdown.</span></div>';
+ if(!active.length)list.innerHTML=`<div class="empty"><div class="emoji">📚</div><b>${translate('No books to return')}</b><span>${translate('Scan a library book to start a loan and its countdown.')}</span></div>`;
  active.forEach(loan=>{
-  const days=daysUntilDue(loan.due_on),dueText=days===null?'Due date unavailable':days<0?'Overdue by '+Math.abs(days)+' day'+(Math.abs(days)===1?'':'s'):days===0?'Due today — return it to the library':days===1?'Due tomorrow':'Due in '+days+' days';
+  const days=daysUntilDue(loan.due_on),dueText=days===null?translate('Due date unavailable'):days<0?translate(Math.abs(days)===1?'Overdue by {days} day':'Overdue by {days} days').replace('{days}',Math.abs(days)):days===0?translate('Due today — return it to the library'):days===1?translate('Due tomorrow'):translate('Due in {days} days').replace('{days}',days);
   const row=document.createElement('div');row.className='loan-row';
   const meta=document.createElement('div');meta.className='loan-meta';
-  const title=document.createElement('b');title.textContent=loan.title;
-  const author=document.createElement('small');author.textContent=loan.author||'Author not listed';
+  const title=document.createElement('b');title.textContent=loan.title;title.setAttribute('translate','no');
+  const author=document.createElement('small');author.textContent=loan.author||window.BookTrackI18n.t('Author not listed');author.setAttribute('translate','no');
   const due=document.createElement('small');due.className='loan-due'+(days!==null&&days<=3?' due-soon':'')+(days!==null&&days<0?' overdue':'');due.textContent=dueText;
-  const date=document.createElement('small');date.textContent='Return by '+(loan.due_on?new Date(loan.due_on+'T12:00:00').toLocaleDateString():'date not set');
+  const date=document.createElement('small');date.textContent=translate('Return by {date}').replace('{date}',loan.due_on?dateFormat.format(new Date(loan.due_on+'T12:00:00')):translate('Not set'));
   meta.append(title,author,due,date);
-  const returnedButton=document.createElement('button');returnedButton.className='secondary';returnedButton.type='button';returnedButton.dataset.returnLoan=loan.loan_id;returnedButton.textContent='Returned';
+  const returnedButton=document.createElement('button');returnedButton.className='secondary';returnedButton.type='button';returnedButton.dataset.returnLoan=loan.loan_id;returnedButton.textContent=translate('Returned');
   row.append(meta,returnedButton);list.append(row);
  });
  if(returned.length){
   const history=document.createElement('details');history.className='series-group';
   const summary=document.createElement('summary'),heading=document.createElement('b'),count=document.createElement('small');
-  heading.textContent='Returned books';count.textContent=returned.length+' book'+(returned.length===1?'':'s');
+  heading.textContent=translate('Returned books');count.textContent=returned.length+' '+translate(returned.length===1?'book':'books');
   summary.append(heading,count);history.append(summary);
   returned.forEach(loan=>{
    const row=document.createElement('div');row.className='loan-row';
    const meta=document.createElement('div');meta.className='loan-meta';
-   const title=document.createElement('b');title.textContent=loan.title;
-   const date=document.createElement('small');date.textContent='Returned '+new Date(loan.returned_at).toLocaleDateString();
+   const title=document.createElement('b');title.textContent=loan.title;title.setAttribute('translate','no');
+   const date=document.createElement('small');date.textContent=translate('Returned {date}').replace('{date}',dateFormat.format(new Date(loan.returned_at)));
    meta.append(title,date);row.append(meta);history.append(row);
   });
   list.append(history);
  }
  document.getElementById('saveLoan').disabled=!loansReady||loanSaveRunning;
 }
+window.addEventListener('booktrack:languagechange',()=>{
+ renderQuickSearch();renderLoans();
+ document.querySelectorAll('[data-book-count]').forEach(count=>{
+  const total=Number(count.dataset.bookCount);
+  count.textContent=total+' '+window.BookTrackI18n.t(total===1?'book':'books');
+ });
+});
 window.BookTrackLoans={
  getLoans:()=>libraryLoans,
  replaceLoans(next){libraryLoans=Array.isArray(next)?next:[];renderLoans()},
@@ -535,7 +547,7 @@ document.getElementById('searchOnline').onclick=async()=>{
    results.textContent=failures.length===settled.length?'Book catalogs are unavailable right now. Try again later.':failures.length?'No books found in the catalogs that responded. Another catalog could not be reached; try again later.':'No books found. Try a different title or author.';
    return;
   }
-  results.innerHTML=(failures.length?'<p class="smallmuted">Some catalog results may be unavailable right now.</p>':'')+'<b>Online book results</b>'+onlineBooks.map((book,index)=>`<div class="bookrow"><div class="bookmeta"><b>${esc(book.title)}</b><small>${esc(book.author||'Author not listed')}${book.series?' · '+esc(book.series):''}${book.year?' · '+esc(book.year):''} · ${esc(book.source)}</small></div><button class="secondary" type="button" data-online-book="${index}">Use this book</button></div>`).join('');
+  results.innerHTML=(failures.length?'<p class="smallmuted">Some catalog results may be unavailable right now.</p>':'')+'<b>Online book results</b>'+onlineBooks.map((book,index)=>`<div class="bookrow"><div class="bookmeta"><b translate="no">${esc(book.title)}</b><small>${book.author?`<span translate="no">${esc(book.author)}</span>`:'Author not listed'}${book.series?` · <span translate="no">${esc(book.series)}</span>`:''}${book.year?' · '+esc(book.year):''} · <span translate="no">${esc(book.source)}</span></small></div><button class="secondary" type="button" data-online-book="${index}">Use this book</button></div>`).join('');
  }catch(error){results.textContent=error.message}
  finally{button.disabled=false}
 };
@@ -548,19 +560,31 @@ document.getElementById('onlineSearchResults').addEventListener('click',event=>{
  go('add');
  document.getElementById('bookName').focus();
 });
+document.getElementById('bookLanguage').addEventListener('change',event=>{
+ const other=document.getElementById('bookLanguageOther'),selected=event.target.value==='other';
+ other.hidden=!selected;other.required=selected;
+ other.setCustomValidity('');
+ if(selected)other.focus();
+});
+document.getElementById('bookLanguageOther').addEventListener('input',event=>event.target.setCustomValidity(''));
 document.getElementById('bookForm').onsubmit=e=>{
  e.preventDefault();
- const value=id=>document.getElementById(id).value.trim(),b={title:value('bookName'),author:value('author'),series:value('bookSeries'),isbn:normalizeISBN(value('isbn')),id:document.getElementById('bookId').value||newBookId(),room:value('room'),shelf:value('shelf'),member:value('member'),destination:value('destination'),details:value('details')};
+ const value=id=>document.getElementById(id).value.trim(),languageSelect=value('bookLanguage'),b={title:value('bookName'),author:value('author'),language:languageSelect==='other'?value('bookLanguageOther'):languageSelect,series:value('bookSeries'),isbn:normalizeISBN(value('isbn')),id:document.getElementById('bookId').value||newBookId(),room:value('room'),shelf:value('shelf'),member:value('member'),destination:value('destination'),details:value('details')};
+ const otherLanguage=document.getElementById('bookLanguageOther');
+ if(languageSelect==='other'&&!b.language){otherLanguage.setCustomValidity(window.BookTrackI18n.t('Enter the book language'));otherLanguage.reportValidity();return}
  const duplicate=findDuplicateBook(b);
  if(duplicate){
   const location=[duplicate.room,duplicate.shelf].filter(Boolean).join(' · ');
-  const author=duplicate.author?' by '+duplicate.author:'';
-  if(!confirm(`This book may already be in your collection:\n\n${duplicate.title}${author}${location?'\n'+location:''}\n\nAdd another copy anyway?`))return;
+  const author=duplicate.author?' '+window.BookTrackI18n.t('by')+' '+duplicate.author:'';
+  const promptText=`${window.BookTrackI18n.t('This book may already be in your collection:')}\n\n${duplicate.title}${author}${location?'\n'+location:''}\n\n${window.BookTrackI18n.t('Add another copy anyway?')}`;
+  if(!confirm(promptText))return;
  }
  if(books.some(book=>book.id.toLowerCase()===b.id.toLowerCase()))b.id=newBookId();
  books.push(b);
  save();
  e.target.reset();
+ document.getElementById('bookLanguageOther').hidden=true;
+ document.getElementById('bookLanguageOther').required=false;
  document.getElementById('bookId').value=newBookId();
  document.getElementById('isbnStatus').textContent='A book’s ISBN barcode can fill in its title and author.';
  buzz();
@@ -583,7 +607,7 @@ document.getElementById('makeCodes').onclick=()=>{
    const svg=qr.createSvgTag(4,4),image=document.createElement('img');
    image.alt='QR code for '+b.title;
    image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-   box.innerHTML=`<b>${esc(b.title)}</b><p class="smallmuted">QR code with location details</p>`;
+   box.innerHTML=`<b translate="no">${esc(b.title)}</b><p class="smallmuted">QR code with location details</p>`;
    box.insertBefore(image,box.lastChild);
    const saveButton=document.createElement('button');
    saveButton.className='secondary';
@@ -599,7 +623,7 @@ document.getElementById('makeCodes').onclick=()=>{
   }
  }else{
   if(typeof JsBarcode==='undefined'){status.textContent='The barcode generator is unavailable. Check your internet connection and try again.';return}
-  box.innerHTML=`<b>${esc(b.title)}</b><svg></svg><p class="smallmuted">Barcode using the book title</p><button class="secondary" type="button">Save barcode</button>`;
+  box.innerHTML=`<b translate="no">${esc(b.title)}</b><svg></svg><p class="smallmuted">Barcode using the book title</p><button class="secondary" type="button">Save barcode</button>`;
   out.append(box);
   const svg=box.querySelector('svg');
   try{
@@ -614,7 +638,9 @@ document.getElementById('makeCodes').onclick=()=>{
  }
  buzz();
 };
-function bookResult(b,source){return `<h3>📍 This book belongs here</h3><b>${esc(b.title)}</b>${b.author?`<br>${esc(b.author)}`:''}${b.series?`<br>Series: ${esc(b.series)}`:''}<br>Book ID: ${esc(b.id)}${b.isbn?`<br>ISBN: ${esc(b.isbn)}`:''}<p><b>Room:</b> ${esc(b.room||'Not set')}<br><b>Shelf:</b> ${esc(b.shelf||'Not set')}<br><b>Looking after it:</b> ${esc(b.member||'Not assigned')}</p>${b.destination?`<p><b>Put it back:</b><br>${esc(b.destination)}</p>`:''}${b.details?`<p><b>Notes:</b> ${esc(b.details)}</p>`:''}<span class="smallmuted">Found from ${esc(source)}.</span>${source==='household list'||source==='your collection'?`<div style="margin-top:14px"><button class="secondary" data-edit-series="${esc(b.id)}" type="button">Set / edit series</button> <button class="secondary" data-delete-book="${esc(b.id)}" type="button">Delete this book</button></div>`:''}`}
+function bookResult(b,source){
+ return `<h3><span>📍</span> <span>This book belongs here</span></h3><b translate="no">${esc(b.title)}</b>${b.author?`<br><span translate="no">${esc(b.author)}</span>`:''}${b.language?`<br><span>${esc(b.language)}</span> <span>edition</span>`:''}${b.series?`<br><span>Series:</span> <span translate="no">${esc(b.series)}</span>`:''}<br><span>Book ID:</span> <span translate="no">${esc(b.id)}</span>${b.isbn?`<br><span>ISBN:</span> <span translate="no">${esc(b.isbn)}</span>`:''}<p><b>Room:</b> ${b.room?`<span translate="no">${esc(b.room)}</span>`:'Not set'}<br><b>Shelf:</b> ${b.shelf?`<span translate="no">${esc(b.shelf)}</span>`:'Not set'}<br><b>Looking after it:</b> ${b.member?`<span translate="no">${esc(b.member)}</span>`:'Not assigned'}</p>${b.destination?`<p><b>Put it back:</b><br><span translate="no">${esc(b.destination)}</span></p>`:''}${b.details?`<p><b>Notes:</b> <span translate="no">${esc(b.details)}</span></p>`:''}<span class="smallmuted"><span>Found from</span> <span>${esc(source)}</span>.</span>${source==='household list'||source==='your collection'?`<div style="margin-top:14px"><button class="secondary" data-edit-series="${esc(b.id)}" type="button">Set / edit series</button> <button class="secondary" data-delete-book="${esc(b.id)}" type="button">Delete this book</button></div>`:''}`;
+}
 document.getElementById('scanResult').addEventListener('click',event=>{
  const addButton=event.target.closest('[data-add-isbn]');
  if(addButton&&scannedBookDetails){fillBookDetails(scannedBookDetails);go('add');document.getElementById('bookName').focus();return}
@@ -622,7 +648,7 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  if(seriesButton){
   const book=books.find(item=>item.id===seriesButton.dataset.editSeries);
   if(!book)return;
-  const series=prompt('Enter a series or collection name. Leave blank to remove it from its group.',book.series||'');
+  const series=prompt(window.BookTrackI18n.t('Set a series or collection name. Leave blank to remove it from its group.'),book.series||'');
   if(series===null)return;
   book.series=series.trim();
   save();
@@ -634,7 +660,7 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  const id=button.dataset.deleteBook;
  const book=books.find(item=>item.id===id);
  if(!book) return;
- if(!confirm(`Delete "${book.title}" from this device's BookTrack collection?`)) return;
+ if(!confirm(`${window.BookTrackI18n.t('Delete')} "${book.title}" ${window.BookTrackI18n.t("from this device's BookTrack collection?")}`)) return;
  books=books.filter(item=>item.id!==id);
  localStorage.setItem(KEY,JSON.stringify(books));
  window.dispatchEvent(new CustomEvent('booktrack-local-save',{detail:{deletedBookId:id}}));
@@ -660,7 +686,7 @@ async function lookup(raw){
  const titleMatches=books.filter(book=>String(book.title||'').trim().toLocaleLowerCase()===id.toLocaleLowerCase());
  if(titleMatches.length){document.getElementById('scanResult').innerHTML=titleMatches.map(book=>bookResult(book,'household list')).join('<hr>');return}
  scannedBookDetails=null;
- document.getElementById('scanResult').innerHTML='<b>Book not found.</b><br>Try a book name or an older BookTrack ID, or scan a valid ISBN-10/13 barcode to look up book details.';
+ document.getElementById('scanResult').innerHTML='<b>Book not found.</b><br><span>Try a book name or an older BookTrack ID, or scan a valid ISBN-10/13 barcode to look up book details.</span>';
 }
 async function applyAddBookBarcode(raw){
  const barcode=normalizeISBN(raw),status=document.getElementById('isbnStatus');
@@ -685,7 +711,7 @@ async function applyAddBookBarcode(raw){
   renderAddLocationOptions('','');
   status.textContent='Book found. Choose a room and shelf, then save it to your collection.';
  }catch(error){
-  status.textContent=error.message+' You can enter the book details manually.';
+  status.textContent=window.BookTrackI18n.t(error.message)+' '+window.BookTrackI18n.t('You can enter the book details manually.');
  }
 }
 document.getElementById('lookupIsbn').onclick=async()=>{
@@ -778,10 +804,10 @@ function stopCamera(){
 document.getElementById('startScan').onclick=()=>{scanForAdd=false;scanForLoan=false;startCamera()};document.getElementById('stopScan').onclick=()=>{scanForAdd=false;scanForLoan=false;stopCamera()};
 document.getElementById('stopAddScan').onclick=()=>{scanForAdd=false;stopCamera();document.getElementById('isbnStatus').textContent='Scanning stopped. You can scan again or enter the ISBN manually.'};
 function applyHouse(){try{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}');document.getElementById('houseName').value=h.name||'';document.getElementById('houseInitials').value=h.initials||'';document.getElementById('avatar').textContent=h.initials||'H'}catch{}}
-document.getElementById('saveHouse').onclick=()=>{const h={name:houseName.value.trim(),initials:houseInitials.value.trim().toUpperCase()};localStorage.setItem(HOUSE,JSON.stringify(h));document.getElementById('avatar').textContent=h.initials||'H';buzz();alert('Household details saved.')};
+document.getElementById('saveHouse').onclick=()=>{const h={name:houseName.value.trim(),initials:houseInitials.value.trim().toUpperCase()};localStorage.setItem(HOUSE,JSON.stringify(h));document.getElementById('avatar').textContent=h.initials||'H';buzz();alert(window.BookTrackI18n.t('Household details saved.'))};
 document.getElementById('exportData').onclick=()=>{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}'),blob=new Blob([JSON.stringify({app:'BookTrackHomeBackup',version:3,household:h,books,locations},null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='booktrack-home-backup.json';a.click();URL.revokeObjectURL(u)};
 document.getElementById('importButton').onclick=()=>importFile.click();
-document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),incoming=Array.isArray(j)?j:j.books;if(!Array.isArray(incoming)||incoming.some(b=>!b||typeof b.id!=='string'||!b.id.trim()||typeof b.title!=='string'||!b.title.trim()))throw Error();const map=new Map(books.map(b=>[b.id.toLowerCase(),b]));incoming.forEach(item=>{const b={...item,id:item.id.trim(),title:item.title.trim(),author:item.author||'',series:typeof item.series==='string'?item.series:'',isbn:normalizeISBN(item.isbn||''),room:item.room||'',shelf:item.shelf||'',member:item.member||'',destination:item.destination||'',details:item.details||''};map.set(b.id.toLowerCase(),b)});books=[...map.values()];if(Array.isArray(j.locations))locations=mergeBookLocations(j.locations,books);if(j.household)localStorage.setItem(HOUSE,JSON.stringify(j.household));save();if(Array.isArray(j.locations))saveLocations(true);applyHouse();alert('Household collection imported.')}catch{alert('This does not look like a BookTrack backup.')}e.target.value=''};
+document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),incoming=Array.isArray(j)?j:j.books;if(!Array.isArray(incoming)||incoming.some(b=>!b||typeof b.id!=='string'||!b.id.trim()||typeof b.title!=='string'||!b.title.trim()))throw Error();const map=new Map(books.map(b=>[b.id.toLowerCase(),b]));incoming.forEach(item=>{const b={...item,id:item.id.trim(),title:item.title.trim(),author:item.author||'',language:typeof item.language==='string'?item.language:'',series:typeof item.series==='string'?item.series:'',isbn:normalizeISBN(item.isbn||''),room:item.room||'',shelf:item.shelf||'',member:item.member||'',destination:item.destination||'',details:item.details||''};map.set(b.id.toLowerCase(),b)});books=[...map.values()];if(Array.isArray(j.locations))locations=mergeBookLocations(j.locations,books);if(j.household)localStorage.setItem(HOUSE,JSON.stringify(j.household));save();if(Array.isArray(j.locations))saveLocations(true);applyHouse();alert(window.BookTrackI18n.t('Household collection imported.'))}catch{alert(window.BookTrackI18n.t('This does not look like a BookTrack backup.'))}e.target.value=''};
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 window.BookTrack={
  getBooks:()=>books,

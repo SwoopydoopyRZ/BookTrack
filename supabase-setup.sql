@@ -7,6 +7,7 @@ create table if not exists public.books (
   book_id text primary key check (length(trim(book_id)) between 1 and 40),
   title text not null check (length(trim(title)) between 1 and 100),
   author text not null default '',
+  language text not null default '',
   series text not null default '',
   isbn text not null default '',
   room text not null default '',
@@ -20,6 +21,7 @@ create table if not exists public.books (
 
 alter table public.books
   add column if not exists author text not null default '',
+  add column if not exists language text not null default '',
   add column if not exists series text not null default '',
   add column if not exists isbn text not null default '';
 
