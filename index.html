@@ -31,7 +31,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 .primary{border:0;border-radius:13px;background:var(--deep);color:#fff;padding:13px 17px;font-weight:750;width:100%;box-shadow:0 5px 12px #10263020}.primary:active,.quick button:active,.nav button:active{transform:scale(.98)}.secondary{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:11px 14px;font-weight:700}.rowbuttons{display:flex;gap:9px}.rowbuttons>*{flex:1}
 .note{background:var(--soft);color:var(--green);border-radius:13px;padding:12px;font-size:12px;line-height:1.5}
 #video,#addVideo{width:100%;background:#0c171c;border-radius:16px;max-height:340px;min-height:190px;object-fit:cover}
-.result{margin-top:12px;background:var(--soft);border-radius:15px;padding:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.result h3{margin:0 0 8px;font-size:15px}
+.result{margin-top:12px;background:var(--soft);border-radius:15px;padding:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.result h3{margin:0 0 8px;font-size:15px}.close-results{display:block;margin:0 0 10px auto;padding:8px 12px;font-size:12px}
 .codes{display:flex;flex-wrap:wrap;gap:12px}.codebox{flex:1;min-width:145px;text-align:center;border:1px dashed var(--line);border-radius:14px;padding:12px;background:var(--surface)}.codebox canvas,.codebox svg,.codebox img{max-width:100%;height:auto}
 .loan-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.loan-row:last-child{border-bottom:0}.loan-meta{min-width:0;flex:1}.loan-meta b{display:block;font-size:14px;overflow-wrap:anywhere}.loan-meta small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.loan-due{font-weight:750;color:var(--green)!important}.loan-due.due-soon,.loan-due.overdue{color:#b24a3b!important}.loan-row .secondary{padding:8px 10px;font-size:11px;white-space:nowrap}
 .bottomnav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}.navinner{width:100%;max-width:600px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.navinner button{border:0;background:transparent;color:var(--nav-muted);border-radius:12px;padding:7px 2px 5px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.navinner button span{font-size:19px;line-height:1.2}.navinner button.active{color:var(--green);background:var(--nav-active-bg)}
@@ -71,7 +71,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <div class="section-head"><div><h2>Add a book</h2><p>Choose where it belongs at home</p></div></div>
  <div class="card">
  <div class="field"><label for="catalogQuery">SEARCH BOOKS BY TITLE OR AUTHOR</label><div class="rowbuttons"><input id="catalogQuery" placeholder="e.g. Thabo or Kirsten Boie"><button class="secondary" id="searchOnline" type="button">Search</button></div><p class="smallmuted">Search Open Library and Google Books to fill in a book's title and author.</p></div>
- <div class="result" id="onlineSearchResults" role="status" aria-live="polite" hidden></div>
+ <div id="catalogSearchResults" hidden><button class="secondary close-results" id="closeOnlineSearchResults" type="button">Close suggestions</button><div class="result" id="onlineSearchResults" role="status" aria-live="polite"></div></div>
  <form id="bookForm">
  <p class="smallmuted">Add a title, a room and a shelf choice. Add a series name to group related books automatically.</p>
  <div class="field"><label for="bookName">BOOK TITLE</label><input id="bookName" required maxlength="100" placeholder="e.g. The Hobbit"></div>
@@ -249,7 +249,7 @@ function showISBNResult(book){
  scannedBookDetails=book;
  document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b translate="no">${esc(book.title)}</b>${book.author?`<p><b>Author:</b> <span translate="no">${esc(book.author)}</span></p>`:''}${book.publisher?`<p><b>Publisher:</b> <span translate="no">${esc(book.publisher)}${book.year?', '+esc(book.year):''}</span></p>`:''}<p class="smallmuted">Details from <span translate="no">${esc(book.source||'Open Library')}</span> for ISBN <span translate="no">${esc(book.isbn)}</span>. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
 }
-function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'||cameraMode==='add'){stopCamera();scanForAdd=false;scanForLoan=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
+function go(id){if(id!=='add')closeCatalogSuggestions();document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'||cameraMode==='add'){stopCamera();scanForAdd=false;scanForLoan=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderAddLocationOptions(selectedRoom=document.getElementById('room').value,selectedShelf=document.getElementById('shelf').value){
  const roomSelect=document.getElementById('room'),shelfSelect=document.getElementById('shelf');
@@ -511,6 +511,11 @@ document.getElementById('roomManager').addEventListener('click',event=>{
 });
 document.getElementById('search').oninput=render;
 let onlineBooks=[];
+function closeCatalogSuggestions(){
+ document.getElementById('catalogSearchResults').hidden=true;
+ document.getElementById('onlineSearchResults').textContent='';
+}
+document.getElementById('closeOnlineSearchResults').onclick=closeCatalogSuggestions;
 async function searchOpenLibraryCatalog(field,value){
  const response=await fetch('https://openlibrary.org/search.json?'+field+'='+encodeURIComponent(value)+'&fields=title,author_name,isbn,first_publish_year,series&limit=10');
  if(!response.ok)throw new Error('Open Library search failed.');
@@ -526,7 +531,7 @@ async function searchGoogleBooksCatalog(field,value){
 }
 document.getElementById('searchOnline').onclick=async()=>{
  const query=document.getElementById('catalogQuery').value.trim(),button=document.getElementById('searchOnline'),results=document.getElementById('onlineSearchResults');
- results.hidden=false;
+ document.getElementById('catalogSearchResults').hidden=false;
  if(!query){results.textContent='Enter a book title or author in the search box first.';return}
  button.disabled=true;
  results.textContent='Searching Open Library and Google Books…';
@@ -557,6 +562,7 @@ document.getElementById('onlineSearchResults').addEventListener('click',event=>{
  const book=onlineBooks[Number(button.dataset.onlineBook)];
  if(!book)return;
  fillBookDetails(book);
+ closeCatalogSuggestions();
  go('add');
  document.getElementById('bookName').focus();
 });
