@@ -30,7 +30,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 .field{margin:13px 0}.field label{display:block;font-size:12px;font-weight:750;margin-bottom:6px;color:var(--muted)}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--surface);color:var(--ink);outline:none}.field input:focus,.field textarea:focus,.field select:focus{border-color:#6da78d;box-shadow:0 0 0 3px #b8f0d255}.field textarea{min-height:72px;resize:vertical}.field input::placeholder,.field textarea::placeholder{color:var(--muted);opacity:.8}
 .primary{border:0;border-radius:13px;background:var(--deep);color:#fff;padding:13px 17px;font-weight:750;width:100%;box-shadow:0 5px 12px #10263020}.primary:active,.quick button:active,.nav button:active{transform:scale(.98)}.secondary{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:11px 14px;font-weight:700}.rowbuttons{display:flex;gap:9px}.rowbuttons>*{flex:1}
 .note{background:var(--soft);color:var(--green);border-radius:13px;padding:12px;font-size:12px;line-height:1.5}
-#video{width:100%;background:#0c171c;border-radius:16px;max-height:340px;min-height:190px;object-fit:cover}
+#video,#addVideo{width:100%;background:#0c171c;border-radius:16px;max-height:340px;min-height:190px;object-fit:cover}
 .result{margin-top:12px;background:var(--soft);border-radius:15px;padding:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.result h3{margin:0 0 8px;font-size:15px}
 .codes{display:flex;flex-wrap:wrap;gap:12px}.codebox{flex:1;min-width:145px;text-align:center;border:1px dashed var(--line);border-radius:14px;padding:12px;background:var(--surface)}.codebox canvas,.codebox svg,.codebox img{max-width:100%;height:auto}
 .loan-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.loan-row:last-child{border-bottom:0}.loan-meta{min-width:0;flex:1}.loan-meta b{display:block;font-size:14px;overflow-wrap:anywhere}.loan-meta small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.loan-due{font-weight:750;color:var(--green)!important}.loan-due.due-soon,.loan-due.overdue{color:#b24a3b!important}.loan-row .secondary{padding:8px 10px;font-size:11px;white-space:nowrap}
@@ -85,7 +85,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <div class="field"><label for="destination">RETURN INSTRUCTIONS</label><textarea id="destination" maxlength="400" placeholder="e.g. Put it back on the blue bookcase"></textarea></div>
  <div class="field"><label for="details">EXTRA NOTES</label><textarea id="details" maxlength="400" placeholder="Anything else to remember"></textarea></div>
  </details>
- <div class="field"><label for="isbn">ISBN / BOOK BARCODE (OPTIONAL)</label><div class="rowbuttons"><input id="isbn" maxlength="20" placeholder="e.g. 9780140328721"><button class="secondary" id="lookupIsbn" type="button">Look up</button></div><button class="secondary" id="scanIsbnForAdd" type="button" style="width:100%;margin-top:9px">Scan barcode with phone camera</button><p class="smallmuted" id="isbnStatus" role="status" aria-live="polite">A book's ISBN barcode can fill in its title and author.</p></div>
+ <div class="field"><label for="isbn">ISBN / BOOK BARCODE (OPTIONAL)</label><div class="rowbuttons"><input id="isbn" maxlength="20" placeholder="e.g. 9780140328721"><button class="secondary" id="lookupIsbn" type="button">Look up</button></div><button class="secondary" id="scanIsbnForAdd" type="button" style="width:100%;margin-top:9px">Scan barcode with phone camera</button><div class="camera-panel" id="addCameraPanel" hidden><video id="addVideo" muted playsinline></video><button class="secondary" id="stopAddScan" type="button" style="width:100%;margin-top:11px">Stop scanning</button></div><p class="smallmuted" id="isbnStatus" role="status" aria-live="polite">A book's ISBN barcode can fill in its title and author.</p></div>
  <input id="bookId" type="hidden">
  <button class="primary" type="submit">Save to my collection</button>
  </form></div>
@@ -131,7 +131,7 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 </div></nav>
 </div>
 <script>
-const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,scannedBookDetails=null,scanForAdd=false,scanForLoan=false,libraryLoans=[],loansReady=false,loanSaveRunning=false,activeRoom='';
+const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,cameraMode='find',scannedBookDetails=null,scanForAdd=false,scanForLoan=false,libraryLoans=[],loansReady=false,loanSaveRunning=false,activeRoom='';
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
 function loadLocations(){try{return normalizeLocations(JSON.parse(localStorage.getItem(LOCATIONS_KEY)||'[]'))}catch(error){console.warn('Could not read saved rooms and shelves.',error);return []}}
 function normalizeLocations(items){
@@ -246,7 +246,7 @@ function showISBNResult(book){
  scannedBookDetails=book;
  document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b>${esc(book.title)}</b>${book.author?`<p><b>Author:</b> ${esc(book.author)}</p>`:''}${book.publisher?`<p><b>Publisher:</b> ${esc(book.publisher)}${book.year?', '+esc(book.year):''}</p>`:''}<p class="smallmuted">Details from ${esc(book.source||'Open Library')} for ISBN ${esc(book.isbn)}. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
 }
-function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'){stopCamera();scanForAdd=false;scanForLoan=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'||cameraMode==='add'){stopCamera();scanForAdd=false;scanForLoan=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderAddLocationOptions(selectedRoom=document.getElementById('room').value,selectedShelf=document.getElementById('shelf').value){
  const roomSelect=document.getElementById('room'),shelfSelect=document.getElementById('shelf');
@@ -645,29 +645,12 @@ async function lookup(raw){
  const id=raw.trim(),shouldAddScannedBook=scanForAdd,shouldAddLibraryLoan=scanForLoan;
  scanForAdd=false;scanForLoan=false;
  if(shouldAddLibraryLoan){await applyLoanBarcode(id);return}
+ if(shouldAddScannedBook){await applyAddBookBarcode(id);return}
  try{const j=JSON.parse(id);if(j.app==='BookTrackHome'||j.app==='BookTrack'){document.getElementById('scanResult').innerHTML=bookResult(j,'QR label');return}}catch{}
  const b=books.find(x=>x.id.toLowerCase()===id.toLowerCase());
  if(b){document.getElementById('scanResult').innerHTML=bookResult(b,'household list');return}
  if(isValidISBN(id)){
    const scannedISBN=canonicalISBN(id),matches=books.filter(book=>book.isbn&&canonicalISBN(book.isbn)===scannedISBN);
-   if(shouldAddScannedBook){
-     if(matches.length){
-       fillBookDetails(matches[0]);
-       renderAddLocationOptions('','');
-       document.getElementById('isbnStatus').textContent='This book is already in your collection. Choose a room and shelf; saving will warn you about the duplicate.';
-       go('add');
-       return;
-     }
-     document.getElementById('scanResult').textContent='Barcode detected. Looking up the book…';
-     try{
-       const details=await fetchISBNDetails(id);
-       fillBookDetails(details);
-       renderAddLocationOptions('','');
-       document.getElementById('isbnStatus').textContent='Book found. Choose a room and shelf, then save it to your collection.';
-       go('add');
-     }catch(error){document.getElementById('scanResult').textContent=error.message}
-     return;
-   }
    if(matches.length){document.getElementById('scanResult').innerHTML=matches.map(book=>bookResult(book,'ISBN barcode in your collection')).join('<hr>');return}
    document.getElementById('scanResult').textContent='Looking up this ISBN…';
    try{showISBNResult(await fetchISBNDetails(id))}
@@ -679,6 +662,32 @@ async function lookup(raw){
  scannedBookDetails=null;
  document.getElementById('scanResult').innerHTML='<b>Book not found.</b><br>Try a book name or an older BookTrack ID, or scan a valid ISBN-10/13 barcode to look up book details.';
 }
+async function applyAddBookBarcode(raw){
+ const barcode=normalizeISBN(raw),status=document.getElementById('isbnStatus');
+ if(!isValidISBN(barcode)){
+  status.textContent='That barcode is not a valid ISBN. Scan the ISBN barcode on the book or enter the ISBN manually.';
+  return;
+ }
+ document.getElementById('isbn').value=barcode;
+ const matches=books.filter(book=>book.isbn&&canonicalISBN(book.isbn)===canonicalISBN(barcode));
+ if(matches.length){
+  fillBookDetails(matches[0]);
+  document.getElementById('isbn').value=barcode;
+  renderAddLocationOptions('','');
+  status.textContent='This book is already in your collection. Choose a room and shelf; saving will warn you about the duplicate.';
+  return;
+ }
+ status.textContent='ISBN scanned. Looking up book details…';
+ try{
+  const details=await fetchISBNDetails(barcode);
+  fillBookDetails(details);
+  document.getElementById('isbn').value=barcode;
+  renderAddLocationOptions('','');
+  status.textContent='Book found. Choose a room and shelf, then save it to your collection.';
+ }catch(error){
+  status.textContent=error.message+' You can enter the book details manually.';
+ }
+}
 document.getElementById('lookupIsbn').onclick=async()=>{
  const status=document.getElementById('isbnStatus'),button=document.getElementById('lookupIsbn');
  button.disabled=true;status.textContent='Looking up ISBN…';
@@ -688,10 +697,9 @@ document.getElementById('lookupIsbn').onclick=async()=>{
 };
 document.getElementById('manualLookup').onclick=()=>lookup(manualCode.value);
 document.getElementById('scanIsbnForAdd').onclick=()=>{
- scanForAdd=true;
- go('scan');
- document.getElementById('scanResult').textContent='Point your camera at the book’s ISBN barcode.';
- startCamera();
+ scanForAdd=true;scanForLoan=false;
+ document.getElementById('isbnStatus').textContent='Point the camera at the book’s ISBN barcode.';
+ startCamera('add');
 };
 const manualCodeInput=document.getElementById('manualCode');
 function submitScannedCode(){
@@ -712,10 +720,11 @@ manualCodeInput.addEventListener('keydown',event=>{
     submitScannedCode();
   }
 });
-async function startCamera(){
-  const status=document.getElementById('scanResult'),panel=document.getElementById('cameraPanel'),startButton=document.getElementById('startScan'),token=++cameraStartToken;
+async function startCamera(mode='find'){
+  cameraMode=mode;
+  const isAddScan=mode==='add',status=document.getElementById(isAddScan?'isbnStatus':'scanResult'),panel=document.getElementById(isAddScan?'addCameraPanel':'cameraPanel'),videoId=isAddScan?'addVideo':'video',startButton=document.getElementById(isAddScan?'scanIsbnForAdd':'startScan'),token=++cameraStartToken;
   startButton.disabled=true;
-  startButton.textContent='Starting camera…';
+  if(!isAddScan)startButton.textContent='Starting camera…';
   panel.hidden=false;
   const loadScript=(url)=>new Promise((resolve,reject)=>{
     const script=document.createElement('script');
@@ -734,7 +743,7 @@ async function startCamera(){
     if(token!==cameraStartToken)return;
     if(!window.ZXingBrowser) throw new Error('Scanner library was not available from either CDN.');
     reader=new ZXingBrowser.BrowserMultiFormatReader();
-    const controls=await reader.decodeFromVideoDevice(undefined,'video',r=>{
+    const controls=await reader.decodeFromVideoDevice(undefined,videoId,r=>{
       if(r&&token===cameraStartToken){lookup(r.getText());buzz();stopCamera()}
     });
     if(token!==cameraStartToken){controls.stop();return}
@@ -745,20 +754,29 @@ async function startCamera(){
     stopCamera();
     console.error('BookTrack scanner error:',e);
     scanForAdd=false;scanForLoan=false;
-    status.textContent='Scanner could not start: '+e.message+' You can still type or scan an ISBN or BookTrack ID below.';
+    status.textContent=isAddScan
+      ?'Scanner could not start: '+e.message+' Enter the ISBN manually, or try scanning again.'
+      :'Scanner could not start: '+e.message+' You can still type or scan an ISBN or BookTrack ID below.';
   }
 }
 function stopCamera(){
  cameraStartToken++;
  if(cameraControls){cameraControls.stop();cameraControls=null}
  reader=null;
- const video=document.getElementById('video');
- if(video.srcObject){video.srcObject.getTracks().forEach(track=>track.stop());video.srcObject=null}
+ ['video','addVideo'].forEach(id=>{
+  const video=document.getElementById(id);
+  if(video&&video.srcObject){video.srcObject.getTracks().forEach(track=>track.stop());video.srcObject=null}
+ });
  document.getElementById('cameraPanel').hidden=true;
+ document.getElementById('addCameraPanel').hidden=true;
  const startButton=document.getElementById('startScan');
  startButton.hidden=false;startButton.disabled=false;startButton.textContent='Start camera';
+ const addButton=document.getElementById('scanIsbnForAdd');
+ addButton.hidden=false;addButton.disabled=false;
+ cameraMode='find';
 }
 document.getElementById('startScan').onclick=()=>{scanForAdd=false;scanForLoan=false;startCamera()};document.getElementById('stopScan').onclick=()=>{scanForAdd=false;scanForLoan=false;stopCamera()};
+document.getElementById('stopAddScan').onclick=()=>{scanForAdd=false;stopCamera();document.getElementById('isbnStatus').textContent='Scanning stopped. You can scan again or enter the ISBN manually.'};
 function applyHouse(){try{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}');document.getElementById('houseName').value=h.name||'';document.getElementById('houseInitials').value=h.initials||'';document.getElementById('avatar').textContent=h.initials||'H'}catch{}}
 document.getElementById('saveHouse').onclick=()=>{const h={name:houseName.value.trim(),initials:houseInitials.value.trim().toUpperCase()};localStorage.setItem(HOUSE,JSON.stringify(h));document.getElementById('avatar').textContent=h.initials||'H';buzz();alert('Household details saved.')};
 document.getElementById('exportData').onclick=()=>{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}'),blob=new Blob([JSON.stringify({app:'BookTrackHomeBackup',version:3,household:h,books,locations},null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='booktrack-home-backup.json';a.click();URL.revokeObjectURL(u)};
