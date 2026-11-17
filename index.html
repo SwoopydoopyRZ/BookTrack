@@ -33,7 +33,8 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 #video{width:100%;background:#0c171c;border-radius:16px;max-height:340px;min-height:190px;object-fit:cover}
 .result{margin-top:12px;background:var(--soft);border-radius:15px;padding:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.result h3{margin:0 0 8px;font-size:15px}
 .codes{display:flex;flex-wrap:wrap;gap:12px}.codebox{flex:1;min-width:145px;text-align:center;border:1px dashed var(--line);border-radius:14px;padding:12px;background:var(--surface)}.codebox canvas,.codebox svg,.codebox img{max-width:100%;height:auto}
-.bottomnav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}.navinner{width:100%;max-width:600px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.navinner button{border:0;background:transparent;color:var(--nav-muted);border-radius:12px;padding:7px 2px 5px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.navinner button span{font-size:19px;line-height:1.2}.navinner button.active{color:var(--green);background:var(--nav-active-bg)}
+.loan-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.loan-row:last-child{border-bottom:0}.loan-meta{min-width:0;flex:1}.loan-meta b{display:block;font-size:14px;overflow-wrap:anywhere}.loan-meta small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.loan-due{font-weight:750;color:var(--green)!important}.loan-due.due-soon,.loan-due.overdue{color:#b24a3b!important}.loan-row .secondary{padding:8px 10px;font-size:11px;white-space:nowrap}
+.bottomnav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:var(--nav-bg);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center}.navinner{width:100%;max-width:600px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.navinner button{border:0;background:transparent;color:var(--nav-muted);border-radius:12px;padding:7px 2px 5px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px}.navinner button span{font-size:19px;line-height:1.2}.navinner button.active{color:var(--green);background:var(--nav-active-bg)}
 .quick-search-dock{position:fixed;z-index:6;left:0;right:0;bottom:calc(68px + env(safe-area-inset-bottom));padding:8px 12px;background:var(--bg)}.quick-search-inner{max-width:736px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:8px 12px}.quick-search-inner input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);padding:5px 0}.quick-search-inner input::placeholder{color:var(--muted);opacity:.85}.quick-search-results{max-height:38vh;overflow:auto;border-top:1px solid var(--line);margin-top:7px}.quick-search-results[hidden]{display:none}.quick-search-result{padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.quick-search-result:last-child{border-bottom:0}.quick-search-result b,.quick-search-result small{display:block}.quick-search-result small{color:var(--muted);font-size:11px;margin-top:3px}
 .quick-search-dock[hidden]{display:none}
 .smallmuted{font-size:11px;color:var(--muted);line-height:1.5}footer{text-align:center;color:#98a3a5;font-size:10px;padding:10px}
@@ -95,6 +96,21 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
  <div class="field"><label>OR SCAN / TYPE A BOOK NAME</label><input id="manualCode" autocomplete="off" placeholder="Scan a label or type a book name"></div><button class="secondary" id="manualLookup" style="width:100%">Find this book</button><p class="smallmuted">USB scanner tip: click the box first. Most USB scanners type the label and press Enter; BookTrack will look it up automatically. Older ID barcodes still work.</p>
  <div id="scanResult" class="result">Scan a saved book's ISBN or a BookTrack label to see its room and shelf. Unsaved ISBNs can be looked up online.</div><p class="smallmuted">Camera scanning requires HTTPS (or localhost), internet for the scanner library and ISBN lookup, and camera permission.</p></div>
 </section>
+<section id="loans" class="screen">
+ <div class="section-head"><div><h2>Library loans</h2><p>Keep track of books you need to return</p></div></div>
+ <div class="card">
+  <p class="smallmuted" id="loansStatus" role="status" aria-live="polite">Sign in to load your library loans.</p>
+  <form id="loanForm">
+   <div class="field"><label for="loanBarcode">ISBN / LIBRARY BARCODE</label><div class="rowbuttons"><input id="loanBarcode" maxlength="120" placeholder="Scan or enter a barcode"><button class="secondary" id="lookupLoanBarcode" type="button">Look up ISBN</button></div><button class="secondary" id="scanLoanBarcode" type="button" style="width:100%;margin-top:9px">Scan borrowed book with camera</button></div>
+   <div class="field"><label for="loanTitle">BOOK TITLE</label><input id="loanTitle" required maxlength="200" placeholder="Enter the book title"></div>
+   <div class="field"><label for="loanAuthor">AUTHOR (OPTIONAL)</label><input id="loanAuthor" maxlength="160" placeholder="Author"></div>
+   <div class="field"><label for="loanDueDate">RETURN BY</label><input id="loanDueDate" type="date" required><p class="smallmuted">Set automatically to 30 days from today. Change it if the library gave you a different due date.</p></div>
+   <button class="primary" id="saveLoan" type="submit">Add borrowed book</button>
+  </form>
+ </div>
+ <div class="section-head"><div><h2>Books to return</h2><p>Due-date countdown and reminders</p></div></div>
+ <div class="card" id="loanList"></div>
+</section>
 <section id="codes" class="screen">
  <div class="section-head"><div><h2>Make book labels</h2><p>Print a code and attach it to a book</p></div></div>
  <div class="card"><div class="field"><label for="labelBook">CHOOSE BOOK</label><select id="labelBook"><option value="">Choose a book</option></select></div><div class="field"><label for="labelType">LABEL TYPE</label><select id="labelType"><option value="qr">QR code</option><option value="barcode">Barcode</option></select></div><button class="primary" id="makeCodes" type="button">Generate label</button><p class="smallmuted" id="labelStatus" role="status" aria-live="polite">Choose a saved book and label type.</p><div id="generated" class="codes" style="margin-top:15px"></div></div>
@@ -111,11 +127,11 @@ main{padding:19px 16px 20px}.screen{display:none}.screen.active{display:block;an
 </main>
 <div class="quick-search-dock" id="quickSearchDock"><div class="quick-search-inner"><input id="quickSearch" type="search" autocomplete="off" placeholder="Find a book by title or author…" aria-label="Search books by title or author"><div class="quick-search-results" id="quickSearchResults" role="list" aria-live="polite" hidden></div></div></div>
 <nav class="bottomnav"><div class="navinner">
-<button class="active" data-tab="home"><span>⌂</span>Home</button><button data-tab="scan"><span>▦</span>Scan</button><button data-tab="codes"><span>▤</span>Labels</button><button data-tab="settings"><span>⚙</span>Settings</button>
+<button class="active" data-tab="home"><span>⌂</span>Home</button><button data-tab="scan"><span>▦</span>Scan</button><button data-tab="loans"><span>◷</span>Loans</button><button data-tab="codes"><span>▤</span>Labels</button><button data-tab="settings"><span>⚙</span>Settings</button>
 </div></nav>
 </div>
 <script>
-const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,scannedBookDetails=null,scanForAdd=false,activeRoom='';
+const KEY='booktrack-home-phone-v3',HOUSE='booktrack-house-v1',THEME_KEY='booktrack-theme-v1',LOCATIONS_KEY='booktrack-locations-v1';let books=load(),locations=mergeBookLocations(loadLocations(),books),reader=null,cameraControls=null,cameraStartToken=0,scannedBookDetails=null,scanForAdd=false,scanForLoan=false,libraryLoans=[],loansReady=false,loanSaveRunning=false,activeRoom='';
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
 function loadLocations(){try{return normalizeLocations(JSON.parse(localStorage.getItem(LOCATIONS_KEY)||'[]'))}catch(error){console.warn('Could not read saved rooms and shelves.',error);return []}}
 function normalizeLocations(items){
@@ -161,6 +177,7 @@ function saveLocations(notifyCloud=false){
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function buzz(){if(navigator.vibrate)navigator.vibrate(12)}
 function newBookId(){let id;do{id='BT-'+(window.crypto&&crypto.randomUUID?crypto.randomUUID().toUpperCase():Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,8).toUpperCase())}while(books.some(b=>String(b.id).toLowerCase()===id.toLowerCase()));return id}
+function newLoanId(){return 'LOAN-'+(window.crypto&&crypto.randomUUID?crypto.randomUUID().toUpperCase():Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,8).toUpperCase())}
 function normalizeISBN(value){return String(value||'').replace(/[\s-]/g,'').toUpperCase()}
 function canonicalISBN(value){
  const code=normalizeISBN(value);
@@ -229,7 +246,7 @@ function showISBNResult(book){
  scannedBookDetails=book;
  document.getElementById('scanResult').innerHTML=`<h3>Book details found online</h3><b>${esc(book.title)}</b>${book.author?`<p><b>Author:</b> ${esc(book.author)}</p>`:''}${book.publisher?`<p><b>Publisher:</b> ${esc(book.publisher)}${book.year?', '+esc(book.year):''}</p>`:''}<p class="smallmuted">Details from ${esc(book.source||'Open Library')} for ISBN ${esc(book.isbn)}. This book is not in your collection yet, so it has no room or shelf assigned.</p><button class="primary" data-add-isbn type="button">Add this book</button>`;
 }
-function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'){stopCamera();scanForAdd=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.navinner button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.getElementById('quickSearchDock').hidden=id!=='home';if(id!=='scan'){stopCamera();scanForAdd=false;scanForLoan=false}if(id==='add'&&!document.getElementById('bookId').value)document.getElementById('bookId').value=newBookId();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 function renderAddLocationOptions(selectedRoom=document.getElementById('room').value,selectedShelf=document.getElementById('shelf').value){
  const roomSelect=document.getElementById('room'),shelfSelect=document.getElementById('shelf');
@@ -275,6 +292,7 @@ function render(){
  const seriesList=document.getElementById('bookSeriesList');seriesList.innerHTML=[...new Set(books.map(book=>String(book.series||'').trim()).filter(Boolean))].map(series=>`<option value="${esc(series)}"></option>`).join('');
  renderLocations();
  renderQuickSearch();
+ renderLoans();
 }
 function createBookRow(book){
  const el=document.createElement('div');el.className='bookrow';
@@ -304,6 +322,133 @@ function renderQuickSearch(){
  if(!matches.length){results.innerHTML='<div class="quick-search-result smallmuted">No matching books in your collection.</div>';return}
  results.innerHTML=matches.map(book=>`<div class="quick-search-result" role="listitem" tabindex="0" data-quick-book="${esc(book.id)}"><b>${esc(book.title)}</b><small>${esc(book.author||'Author not listed')} · Room: ${esc(book.room||'Not set')} · Shelf: ${esc(book.shelf||'Not set')}</small></div>`).join('');
 }
+function localDateString(date=new Date()){
+ const year=date.getFullYear(),month=String(date.getMonth()+1).padStart(2,'0'),day=String(date.getDate()).padStart(2,'0');
+ return year+'-'+month+'-'+day;
+}
+function setDefaultLoanDueDate(){
+ const due=new Date();due.setHours(12,0,0,0);due.setDate(due.getDate()+30);
+ const dueInput=document.getElementById('loanDueDate');
+ dueInput.min=localDateString();
+ dueInput.value=localDateString(due);
+}
+function setLoanStatus(message,error=false){
+ const status=document.getElementById('loansStatus');
+ status.textContent=message;
+ status.style.color=error?'#a33':'';
+}
+function daysUntilDue(dueDate){
+ const parts=String(dueDate||'').split('-').map(Number);
+ if(parts.length!==3||parts.some(part=>!Number.isInteger(part)))return null;
+ const due=Date.UTC(parts[0],parts[1]-1,parts[2]),todayParts=localDateString().split('-').map(Number);
+ const today=Date.UTC(todayParts[0],todayParts[1]-1,todayParts[2]);
+ return Math.round((due-today)/86400000);
+}
+function renderLoans(){
+ const list=document.getElementById('loanList'),active=libraryLoans.filter(loan=>!loan.returned_at).sort((a,b)=>String(a.due_on).localeCompare(String(b.due_on))),returned=libraryLoans.filter(loan=>loan.returned_at).sort((a,b)=>String(b.returned_at).localeCompare(String(a.returned_at)));
+ list.innerHTML='';
+ if(!active.length)list.innerHTML='<div class="empty"><div class="emoji">📚</div><b>No books to return</b><span>Scan a library book to start a loan and its countdown.</span></div>';
+ active.forEach(loan=>{
+  const days=daysUntilDue(loan.due_on),dueText=days===null?'Due date unavailable':days<0?'Overdue by '+Math.abs(days)+' day'+(Math.abs(days)===1?'':'s'):days===0?'Due today — return it to the library':days===1?'Due tomorrow':'Due in '+days+' days';
+  const row=document.createElement('div');row.className='loan-row';
+  const meta=document.createElement('div');meta.className='loan-meta';
+  const title=document.createElement('b');title.textContent=loan.title;
+  const author=document.createElement('small');author.textContent=loan.author||'Author not listed';
+  const due=document.createElement('small');due.className='loan-due'+(days!==null&&days<=3?' due-soon':'')+(days!==null&&days<0?' overdue':'');due.textContent=dueText;
+  const date=document.createElement('small');date.textContent='Return by '+(loan.due_on?new Date(loan.due_on+'T12:00:00').toLocaleDateString():'date not set');
+  meta.append(title,author,due,date);
+  const returnedButton=document.createElement('button');returnedButton.className='secondary';returnedButton.type='button';returnedButton.dataset.returnLoan=loan.loan_id;returnedButton.textContent='Returned';
+  row.append(meta,returnedButton);list.append(row);
+ });
+ if(returned.length){
+  const history=document.createElement('details');history.className='series-group';
+  const summary=document.createElement('summary'),heading=document.createElement('b'),count=document.createElement('small');
+  heading.textContent='Returned books';count.textContent=returned.length+' book'+(returned.length===1?'':'s');
+  summary.append(heading,count);history.append(summary);
+  returned.forEach(loan=>{
+   const row=document.createElement('div');row.className='loan-row';
+   const meta=document.createElement('div');meta.className='loan-meta';
+   const title=document.createElement('b');title.textContent=loan.title;
+   const date=document.createElement('small');date.textContent='Returned '+new Date(loan.returned_at).toLocaleDateString();
+   meta.append(title,date);row.append(meta);history.append(row);
+  });
+  list.append(history);
+ }
+ document.getElementById('saveLoan').disabled=!loansReady||loanSaveRunning;
+}
+window.BookTrackLoans={
+ getLoans:()=>libraryLoans,
+ replaceLoans(next){libraryLoans=Array.isArray(next)?next:[];renderLoans()},
+ setReady(ready){loansReady=Boolean(ready);renderLoans()},
+ setStatus:setLoanStatus
+};
+document.getElementById('loanDueDate').addEventListener('change',()=>{
+ const due=document.getElementById('loanDueDate');
+ if(due.value<localDateString())due.value=localDateString();
+});
+document.getElementById('loanForm').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(!loansReady){setLoanStatus('The library loan database is not ready yet. Check your connection or Supabase setup.',true);return}
+ const value=id=>document.getElementById(id).value.trim(),button=document.getElementById('saveLoan'),loan={loan_id:newLoanId(),title:value('loanTitle'),author:value('loanAuthor'),barcode:value('loanBarcode'),borrowed_on:localDateString(),due_on:value('loanDueDate'),returned_at:null};
+ if(!loan.title){document.getElementById('loanTitle').focus();return}
+ if(!loan.due_on||loan.due_on<loan.borrowed_on){setLoanStatus('Choose a return date today or later.',true);return}
+ loanSaveRunning=true;button.disabled=true;setLoanStatus('Saving library loan…');
+ try{
+  await window.BookTrackLoans.add(loan);
+  event.target.reset();setDefaultLoanDueDate();
+  setLoanStatus('Borrowed book saved. '+loan.title+' is due '+new Date(loan.due_on+'T12:00:00').toLocaleDateString()+'.');
+  document.getElementById('loanBarcode').focus();
+ }catch(error){setLoanStatus('Could not save this library loan: '+error.message,true)}
+ finally{loanSaveRunning=false;button.disabled=!loansReady}
+});
+document.getElementById('loanList').addEventListener('click',async event=>{
+ const button=event.target.closest('[data-return-loan]');
+ if(!button)return;
+ button.disabled=true;
+ try{await window.BookTrackLoans.markReturned(button.dataset.returnLoan);setLoanStatus('Book marked as returned.')}
+ catch(error){setLoanStatus('Could not update this loan: '+error.message,true);button.disabled=false}
+});
+async function applyLoanBarcode(raw){
+ const barcode=String(raw||'').trim();
+ if(!barcode)return;
+ document.getElementById('loanBarcode').value=barcode;
+ if(!isValidISBN(barcode)){
+  setLoanStatus('Barcode saved. Enter the book title manually; non-ISBN library barcodes may not have catalog details.');
+  go('loans');document.getElementById('loanTitle').focus();return;
+ }
+ const savedBook=books.find(book=>book.isbn&&canonicalISBN(book.isbn)===canonicalISBN(barcode));
+ if(savedBook){
+  document.getElementById('loanTitle').value=savedBook.title;
+  document.getElementById('loanAuthor').value=savedBook.author||'';
+  setLoanStatus('Book details filled from your collection. This loan will be saved separately.');
+  go('loans');document.getElementById('loanTitle').focus();return;
+ }
+ setLoanStatus('Looking up borrowed book…');
+ try{
+  const details=await fetchISBNDetails(barcode);
+  document.getElementById('loanTitle').value=details.title||'';
+  document.getElementById('loanAuthor').value=details.author||'';
+  setLoanStatus('Book details found. Check the title and due date, then save the loan.');
+ }catch(error){setLoanStatus('ISBN saved, but book details were not found: '+error.message+' Enter the title manually.',true)}
+ go('loans');document.getElementById('loanTitle').focus();
+}
+document.getElementById('lookupLoanBarcode').addEventListener('click',()=>applyLoanBarcode(document.getElementById('loanBarcode').value));
+document.getElementById('scanLoanBarcode').addEventListener('click',()=>{
+ scanForAdd=false;scanForLoan=true;go('scan');
+ document.getElementById('scanResult').textContent='Point the camera at the library book’s ISBN barcode.';
+ startCamera();
+});
+window.addEventListener('booktrack-loans-updated',()=>{
+ const state=window.BookTrackLoans;
+ if(state){libraryLoans=state.getLoans();renderLoans()}
+});
+setDefaultLoanDueDate();
+let loanCountdownDate=localDateString();
+setInterval(()=>{
+ const today=localDateString();
+ if(today!==loanCountdownDate){loanCountdownDate=today;renderLoans()}
+},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderLoans()});
 document.getElementById('quickSearch').addEventListener('input',renderQuickSearch);
 document.getElementById('quickSearchResults').addEventListener('click',event=>{
  const result=event.target.closest('[data-quick-book]');
@@ -497,8 +642,9 @@ document.getElementById('scanResult').addEventListener('click',event=>{
  render();
 });
 async function lookup(raw){
- const id=raw.trim(),shouldAddScannedBook=scanForAdd;
- scanForAdd=false;
+ const id=raw.trim(),shouldAddScannedBook=scanForAdd,shouldAddLibraryLoan=scanForLoan;
+ scanForAdd=false;scanForLoan=false;
+ if(shouldAddLibraryLoan){await applyLoanBarcode(id);return}
  try{const j=JSON.parse(id);if(j.app==='BookTrackHome'||j.app==='BookTrack'){document.getElementById('scanResult').innerHTML=bookResult(j,'QR label');return}}catch{}
  const b=books.find(x=>x.id.toLowerCase()===id.toLowerCase());
  if(b){document.getElementById('scanResult').innerHTML=bookResult(b,'household list');return}
@@ -598,7 +744,7 @@ async function startCamera(){
     if(token!==cameraStartToken)return;
     stopCamera();
     console.error('BookTrack scanner error:',e);
-    scanForAdd=false;
+    scanForAdd=false;scanForLoan=false;
     status.textContent='Scanner could not start: '+e.message+' You can still type or scan an ISBN or BookTrack ID below.';
   }
 }
@@ -612,7 +758,7 @@ function stopCamera(){
  const startButton=document.getElementById('startScan');
  startButton.hidden=false;startButton.disabled=false;startButton.textContent='Start camera';
 }
-document.getElementById('startScan').onclick=()=>{scanForAdd=false;startCamera()};document.getElementById('stopScan').onclick=()=>{scanForAdd=false;stopCamera()};
+document.getElementById('startScan').onclick=()=>{scanForAdd=false;scanForLoan=false;startCamera()};document.getElementById('stopScan').onclick=()=>{scanForAdd=false;scanForLoan=false;stopCamera()};
 function applyHouse(){try{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}');document.getElementById('houseName').value=h.name||'';document.getElementById('houseInitials').value=h.initials||'';document.getElementById('avatar').textContent=h.initials||'H'}catch{}}
 document.getElementById('saveHouse').onclick=()=>{const h={name:houseName.value.trim(),initials:houseInitials.value.trim().toUpperCase()};localStorage.setItem(HOUSE,JSON.stringify(h));document.getElementById('avatar').textContent=h.initials||'H';buzz();alert('Household details saved.')};
 document.getElementById('exportData').onclick=()=>{const h=JSON.parse(localStorage.getItem(HOUSE)||'{}'),blob=new Blob([JSON.stringify({app:'BookTrackHomeBackup',version:3,household:h,books,locations},null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='booktrack-home-backup.json';a.click();URL.revokeObjectURL(u)};

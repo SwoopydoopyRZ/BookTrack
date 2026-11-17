@@ -38,6 +38,6 @@ Supabase's default email sender has delivery restrictions. For dependable househ
 
 ## 5. Verify deployment
 
-After Supabase reports the migration as successful, open **Table Editor** and confirm that `public.books` and `public.room_shelves` exist and RLS is enabled. Then test sign-in, adding a room and shelf, and seeing them on another signed-in device.
+After Supabase reports the migration as successful, open **Table Editor** and confirm that `public.books`, `public.room_shelves`, and `public.library_loans` exist and RLS is enabled. Then test sign-in, adding a room and shelf, and seeing them on another signed-in device. Library loans are stored in their own table and sync between signed-in devices.
 
 The publishable key in `cloud.js` is designed for browser use. Never put a secret/service-role key in this repository.

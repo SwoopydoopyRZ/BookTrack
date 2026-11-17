@@ -5,6 +5,7 @@
   let activeUserId = null;
   let channel = null;
   let roomShelvesAvailable = false;
+  let libraryLoansAvailable = false;
   let pushRunning = false;
   let pushPending = false;
   let locationsPushRunning = false;
@@ -42,6 +43,94 @@
     member: row.member || '',
     destination: row.destination || '',
     details: row.details || ''
+  });
+
+  const loanToRow = loan => ({
+    loan_id: String(loan.loan_id).trim(),
+    title: loan.title,
+    author: loan.author || '',
+    barcode: loan.barcode || '',
+    borrowed_on: loan.borrowed_on,
+    due_on: loan.due_on,
+    returned_at: loan.returned_at || null
+  });
+
+  const loanFromRow = row => ({
+    loan_id: row.loan_id,
+    title: row.title,
+    author: row.author || '',
+    barcode: row.barcode || '',
+    borrowed_on: row.borrowed_on,
+    due_on: row.due_on,
+    returned_at: row.returned_at || null
+  });
+
+  function replaceSharedLoans(next) {
+    window.BookTrackLoans.replaceLoans(next);
+    window.dispatchEvent(new Event('booktrack-loans-updated'));
+  }
+
+  async function loadSharedLoans() {
+    const { data, error } = await client
+      .from('library_loans')
+      .select('*')
+      .order('due_on')
+      .order('loan_id');
+    if (error) {
+      libraryLoansAvailable = false;
+      window.BookTrackLoans.setReady(false);
+      window.BookTrackLoans.setStatus('Library loan database needs setup or could not be reached: ' + error.message, true);
+      return;
+    }
+    libraryLoansAvailable = true;
+    replaceSharedLoans((data || []).map(loanFromRow));
+    window.BookTrackLoans.setReady(true);
+    window.BookTrackLoans.setStatus('Library loans are synced across your signed-in devices.');
+  }
+
+  async function refreshSharedLoans() {
+    const { data, error } = await client
+      .from('library_loans')
+      .select('*')
+      .order('due_on')
+      .order('loan_id');
+    if (error) {
+      window.BookTrackLoans.setStatus('Could not refresh library loans: ' + error.message, true);
+      return;
+    }
+    replaceSharedLoans((data || []).map(loanFromRow));
+  }
+
+  async function saveLibraryLoan(loan) {
+    if (!activeUserId) throw new Error('Sign in before saving a library loan.');
+    if (!libraryLoansAvailable) throw new Error('The library loan table is unavailable. Apply the Supabase migration and try again.');
+    const { data, error } = await client
+      .from('library_loans')
+      .upsert(loanToRow(loan), { onConflict: 'loan_id' })
+      .select('*')
+      .single();
+    if (error) throw error;
+    const loans = window.BookTrackLoans.getLoans().filter(item => item.loan_id !== data.loan_id);
+    replaceSharedLoans([...loans, loanFromRow(data)]);
+  }
+
+  async function markLibraryLoanReturned(loanId) {
+    if (!activeUserId) throw new Error('Sign in before updating a library loan.');
+    if (!libraryLoansAvailable) throw new Error('The library loan table is unavailable. Apply the Supabase migration and try again.');
+    const { data, error } = await client
+      .from('library_loans')
+      .update({ returned_at: new Date().toISOString() })
+      .eq('loan_id', loanId)
+      .select('*')
+      .single();
+    if (error) throw error;
+    const loans = window.BookTrackLoans.getLoans().filter(item => item.loan_id !== data.loan_id);
+    replaceSharedLoans([...loans, loanFromRow(data)]);
+  }
+
+  Object.assign(window.BookTrackLoans, {
+    add: saveLibraryLoan,
+    markReturned: markLibraryLoanReturned
   });
 
   async function loadSharedBooks() {
@@ -122,6 +211,10 @@
 
     if (!session) {
       activeUserId = null;
+      libraryLoansAvailable = false;
+      window.BookTrackLoans.replaceLoans([]);
+      window.BookTrackLoans.setReady(false);
+      window.BookTrackLoans.setStatus('Sign in to load your library loans.');
       if (channel) {
         await client.removeChannel(channel);
         channel = null;
@@ -138,6 +231,7 @@
 
     try {
       await loadSharedBooks();
+      await loadSharedLoans();
       if (channel) await client.removeChannel(channel);
       channel = client.channel('booktrack-shared-books')
         .on('postgres_changes', {
@@ -151,6 +245,13 @@
           schema: 'public',
           table: 'room_shelves'
         }, refreshLocationsFromRealtime);
+      }
+      if (libraryLoansAvailable) {
+        channel.on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'library_loans'
+        }, refreshSharedLoans);
       }
       channel.subscribe();
     } catch (error) {

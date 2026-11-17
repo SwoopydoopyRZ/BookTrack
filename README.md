@@ -34,6 +34,7 @@ After the first successful deployment, add the published site URL to Supabase Au
 - Manage shared rooms and each room's shelves in Settings; select a room and shelf when adding a book.
 - Add a series or collection name to a book; books with the same name are automatically grouped in collapsible sections on the home screen. Series names can be selected from existing books or edited from a saved book's details; catalog results may not include series information.
 - Make book labels by choosing a book by name and selecting QR code or barcode; barcodes contain the title rather than the generated book ID.
+- Track borrowed library books in the Loans tab. Scan an ISBN to fill book details, set a 30-day default return date, see an in-app countdown and mark books returned. Library loans sync separately from owned books.
 - Shared online collection with live refresh across signed-in devices.
 - Email magic-link sign-in.
 - QR code and Code 128 barcode generation and scanning.
